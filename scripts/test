@@ -146,5 +146,17 @@ t fs-guard "rm -rf node_modules" PASS
 t fs-guard "rm build/app.js" PASS
 t fs-guard "confirm worktree" PASS
 
+# wiring: every guard on disk is executable and named by each harness's wiring
+cd .. || exit 1
+python3 -c 'import json; json.load(open("hooks/hooks.json"))' \
+  || { fail=$((fail+1)); echo "FAIL hooks/hooks.json is not valid JSON"; }
+for g in scripts/*-guard; do
+  n=$(basename "$g")
+  [ -x "$g" ] || { fail=$((fail+1)); echo "FAIL $n is not executable"; }
+  for w in hooks/hooks.json .opencode/plugin.ts .pi/plugin.ts; do
+    grep -q "$n" "$w" || { fail=$((fail+1)); echo "FAIL $n missing from $w"; }
+  done
+done
+
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
