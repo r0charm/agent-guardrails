@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Guards kubectl and helm. See ../policies/kubernetes.md.
+#
+# Names no cluster and detects no environment, on purpose. Deciding which
+# context is production is a way to fail, and a guard that fails to recognise
+# production is worse than one that asks every time.
+#
+# Verbs are anchored with ${S}verb${E}, a space, quote or shell separator on
+# each side, rather than matched loose. Unanchored,
+# `delete` fires on `-l app=delete-me`, `label` on `--show-labels`, `scale` on
+# `deploy/scaler` and `create` on `reason=Created`. Six of eight ordinary reads
+# asked before this was anchored, and a guard that cries wolf on reads is one
+# people learn to click through.
+. "$(dirname "$0")/lib.sh"
+
+S="(^|[ '\";&|(])"
+E="([ '\";&|)]|\$)"
+ES="([ '\";&|)/]|\$)"
+T=$'\t'
+
+# `auth can-i create pods` asks whether a verb would be permitted. It is the one
+# read that legitimately carries a mutation verb as an argument.
+case " $* " in *" can-i "*) exit 0 ;; esac
+
+DENY=(
+  "${S}delete +(namespace|ns) ${T}takes every workload, secret and volume in the namespace with it"
+  "${S}delete +([^ ]+ +)*(pvc|persistentvolumeclaim|pv|persistentvolume)${ES}${T}deletes storage, and the data on it"
+  "${S}delete +([^ ]+ +)*(crd|customresourcedefinition)s?${E}${T}deletes every custom resource of that kind across the cluster"
+  "${S}delete +.*--all${E}${T}a bulk delete whose blast radius is not visible in the command"
+  "${S}delete +.*--force.*--grace-period=?0${T}skips graceful termination, so in-flight work is lost"
+)
+
+ASK=(
+  # Capability grants. These change nothing themselves, they hand over the
+  # means to change things where no later kubectl command records it.
+  "${S}exec${E}${T}opens a shell inside the pod, where nothing that follows is visible to this guard"
+  "${S}attach${E}${T}attaches to a running container, outside what this guard can see"
+  "${S}port-forward${E}${T}opens a tunnel past the ingress and any auth in front of the service, and what goes through it is invisible here"
+  "${S}proxy${E}${T}exposes the API server locally"
+  "${S}cp${E}${T}copies files into or out of a running pod"
+  "${S}debug${E}${T}attaches a debug container with elevated access"
+
+  # A read whose output is a credential. Syntactically identical to any other
+  # get; the value is in the transcript from then on.
+  "${S}get +([^ ]+ +)*secrets?${ES}.*(-o|--output)${T}prints secret values, which then sit in the session transcript"
+
+  # State changes.
+  "${S}(apply|create|delete|patch|replace|edit|scale|annotate|label|taint|drain|cordon|uncordon)${E}${T}changes cluster state"
+  "${S}rollout +(restart|undo|pause|resume)${E}${T}changes what is running"
+  "${S}set +(image|env|resources)${E}${T}changes the running workload"
+  "${S}config +use-context${E}${T}redirects every later command in this session to another cluster, without naming it"
+  "${S}helm +(install|upgrade|rollback|uninstall|delete)${E}${T}changes a release and everything in it"
+)
+
+guard_run '(^|[^[:alnum:]_-])(kubectl|helm)([^[:alnum:]_-]|$)' "$@"

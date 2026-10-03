@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Guards filesystem deletes that git cannot recover. See ../policies/filesystem.md.
+#
+# rm matches no other guard, so `rm -rf .claude/worktrees` slips past every
+# check and takes uncommitted work in every worktree with it. This closes that.
+. "$(dirname "$0")/lib.sh"
+
+ASK=(
+  $'(^|[^[:alnum:]_-])rm +.*worktree\tremoves a git worktree by path; any uncommitted work in it is gone and git cannot recover it'
+  $'(^|[^[:alnum:]_-])rm +-[a-zA-Z]* +.*\\.claude(/|$| )\tdeletes under .claude, which holds worktrees and local agent state'
+  $'(^|[^[:alnum:]_-])find +.*worktree.* -delete\tdeletes matched worktree paths, uncommitted work included'
+)
+
+guard_run '(^|[^[:alnum:]_-])(rm|rmdir|find)([^[:alnum:]_-]|$)' "$@"

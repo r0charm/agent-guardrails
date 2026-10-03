@@ -1,0 +1,9 @@
+{
+  "name": "agent-guardrails",
+  "description": "Command guards for coding agents: deny or ask on destructive git, filesystem, Kubernetes, cloud and data commands.",
+  "version": "1.0.0",
+  "author": { "name": "Ricardo Rocha" },
+  "license": "MIT",
+  "homepage": "https://github.com/r0charm/agent-guardrails",
+  "repository": "https://github.com/r0charm/agent-guardrails"
+}

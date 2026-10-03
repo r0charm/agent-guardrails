@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Guards anything holding data: DynamoDB, S3, MongoDB, RDS. See ../policies/data.md.
+#
+# Split from cloud by what breaks rather than by vendor. `aws dynamodb
+# delete-table` and `db.collection.drop()` fail the same way, and neither is
+# recoverable by re-running anything.
+. "$(dirname "$0")/lib.sh"
+
+DENY=(
+  $'(dynamodb +delete-table|delete-table +.*--table-name)\tdeletes the table and everything in it'
+  $'s3 +rb\tremoves the bucket'
+  $'s3api +delete-bucket\tremoves the bucket'
+  $'rds +delete-db-(instance|cluster)\tdeletes the database'
+  $'\\.dropDatabase *\\(\tdrops the entire database'
+  $'mongorestore +.*--drop\tdrops each collection before restoring, so a wrong dump replaces good data'
+  $'\\.deleteMany *\\( *\\{ *\\}\tan empty filter matches every document in the collection'
+  $'\\.remove *\\( *\\{ *\\}\tan empty filter matches every document in the collection'
+)
+
+ASK=(
+  # The three that do not read as destructive and are.
+  $'s3 +sync +.*--delete\tdeletes at the destination whatever is missing from the source, so the wrong direction empties the bucket'
+  $'dynamodb +put-item\treplaces the whole item rather than merging, so unlisted attributes are dropped'
+  $'s3 +mv\tis a copy followed by a delete at the source'
+
+  # Reads that yield secrets or move data out.
+  $'secretsmanager +get-secret-value\tprints the secret, which then sits in the session transcript'
+  $'ssm +get-parameter.*--with-decryption\tprints the decrypted value into the session transcript'
+  $'mongodump\tcopies the data out to disk'
+  $'s3 +cp +s3://.* [^s]\tcopies data out of the bucket to local disk'
+
+  # Ordinary writes and deletes.
+  $'dynamodb +(delete-item|batch-write-item|update-item|update-table|restore-table)\tchanges table data or shape'
+  $'s3(api)? +(rm|put-object|delete-object)\tchanges bucket contents'
+  $'s3 +sync\twrites to the destination'
+  $'(put-bucket-policy|put-public-access-block|put-bucket-acl)\tchanges who can reach the bucket'
+  $'\\.(drop|deleteMany|deleteOne|updateMany|insertMany|replaceOne) *\\(\tchanges collection data'
+  $'rds +(modify|reboot|failover|restore)-db\tchanges or interrupts the database'
+)
+
+guard_run '(^|[^[:alnum:]_-])(aws|mongo|mongosh|mongodump|mongorestore|db\.)' "$@"
