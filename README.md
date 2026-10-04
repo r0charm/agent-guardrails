@@ -1,6 +1,6 @@
 # agent-guardrails
 
-Command guards for coding agents. Five bash guards deny or ask on destructive git, filesystem, Kubernetes, cloud and data commands, for Claude Code, opencode and Pi. Standalone: no skills, no other dependency.
+Command guards for coding agents. Bash guards that deny or ask on destructive commands before they run, for Claude Code, opencode and Pi. Standalone: no skills, no other dependency.
 
 > **A safety net, not a security boundary.** Each guard decides from the command text alone, so a determined or creative command can slip past a pattern. Real protection is credential scope (a read-only cloud profile, a kubeconfig without prod) and isolation (containers, worktrees, sandboxes). These guards catch the mistakes those let through. Layering is in [`setup.md`](setup.md).
 
@@ -31,17 +31,9 @@ pi install "$PWD"
 
 Three outcomes per command: **deny** (exit 2, cannot be lifted in session), **ask** (a confirmation, which auto mode does not skip), or silent (falls through to your permission rules). Guards never allow.
 
-| Command | Outcome | Why |
-|---|---|---|
-| `git reflog expire --all` | deny | removes the recovery net for every other git mistake |
-| `kubectl delete namespace prod` | deny | takes every workload, secret and volume with it |
-| `git push origin main` | ask | the point of no return for committed work |
-| `terraform apply` | ask | changes infrastructure or its state file |
-| `kubectl get pods` | silent | reads stay silent, or people learn to click through |
+Destructive or irreversible commands deny or ask; reads stay silent, so a confirmation keeps its meaning. Verbs are anchored, so a match on a word inside an argument does not fire.
 
-Verbs are anchored, so `delete` does not fire on `-l app=delete-me`.
-
-`setup.md` has the tiers, what each guard covers, and how to confirm they fire. Read it before trusting them: a guard that was never wired is worse than none.
+`setup.md` has what is covered and how to confirm the guards fire; per-guard policies are in `policies/`. Read it before trusting them: a guard that was never wired is worse than none.
 
 ## Test
 
