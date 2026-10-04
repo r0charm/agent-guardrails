@@ -75,12 +75,20 @@ guard_run() {
   local scope="$1" command reason
   command=$(guard_command "${@:2}")
   [ -n "$command" ] || exit 0
-  printf '%s' "$command" | grep -qE "$scope" || exit 0
 
-  if reason=$(guard_match "$command" "${DENY[@]:-}"); then
+  # The shell strips quotes and backslashes before it runs anything, so
+  # `"git" push`, `git 'reset' --hard` and `git<TAB>push` run as the plain
+  # command. Match the raw text and the text as the shell will see it, one per
+  # line, so a pattern written for one catches the other.
+  local seen
+  seen=$(printf '%s' "$command" | tr -d "'\"\\\\" | tr '\t' ' ')
+  seen="$command"$'\n'"$seen"
+  printf '%s' "$seen" | grep -qE "$scope" || exit 0
+
+  if reason=$(guard_match "$seen" "${DENY[@]:-}"); then
     guard_deny "$command" "$reason"
   fi
-  if reason=$(guard_match "$command" "${ASK[@]:-}"); then
+  if reason=$(guard_match "$seen" "${ASK[@]:-}"); then
     guard_ask "$reason"
   fi
   exit 0

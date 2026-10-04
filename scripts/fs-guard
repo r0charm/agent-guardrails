@@ -7,7 +7,12 @@
 
 ASK=(
   $'(^|[^[:alnum:]_-])rm +.*worktree\tremoves a git worktree by path; any uncommitted work in it is gone and git cannot recover it'
-  $'(^|[^[:alnum:]_-])rm +-[a-zA-Z]* +.*\\.claude(/|$| )\tdeletes under .claude, which holds worktrees and local agent state'
+  # Flags in any form, short or long, split or together: `-rf`, `-r -f`,
+  # `--recursive`. A single file under .claude with no flag stays silent.
+  $'(^|[^[:alnum:]_-])rm +(-[^ ]+ +)+([^ ]+ +)*([^ ]*/)?\\.claude(/|$| )\tdeletes under .claude, which holds worktrees and local agent state'
+  # The repository itself, not a file inside it: `rm -f .git/index.lock` is
+  # ordinary recovery from a crashed git and stays silent.
+  $'(^|[^[:alnum:]_-])rm +(-[^ ]+ +)+([^ ]+ +)*([^ ]*/)?\\.git/?( |;|&|$)\tdeletes the repository: unpushed commits, stashes and the reflog go with it, and nothing recovers them'
   $'(^|[^[:alnum:]_-])find +.*worktree.* -delete\tdeletes matched worktree paths, uncommitted work included'
 )
 

@@ -27,10 +27,11 @@ Finally, in a real session, ask for one and confirm you are stopped. That is the
 | Guard | Covers | Policy |
 |---|---|---|
 | `git-guard` | git | [policies/git.md](policies/git.md) |
-| `fs-guard` | `rm` and `find -delete` on worktrees and `.claude` | [policies/filesystem.md](policies/filesystem.md) |
+| `fs-guard` | `rm` and `find -delete` on worktrees, `.claude` and `.git` | [policies/filesystem.md](policies/filesystem.md) |
 | `kubernetes-guard` | kubectl, helm | [policies/kubernetes.md](policies/kubernetes.md) |
 | `data-guard` | DynamoDB, S3, MongoDB, RDS | [policies/data.md](policies/data.md) |
 | `cloud-guard` | EC2, IAM, ECR, CloudFormation, EKS, Terraform | [policies/cloud.md](policies/cloud.md) |
+| `shell-guard` | pipes into a shell, `eval`, variables and substitutions run as commands | [policies/shell.md](policies/shell.md) |
 
 Split by what breaks rather than by vendor, which is why DynamoDB is data and not cloud: `aws dynamodb delete-table` and `db.collection.drop()` fail the same way.
 

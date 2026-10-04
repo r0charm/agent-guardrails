@@ -15,11 +15,16 @@ These four are denied rather than asked because they remove the recovery net. Ev
 
 | Command | Why |
 |---|---|
-| `git push`, force variants | The point of no return for anything already committed. Force additionally discards commits on the remote. |
+| `git push`, force variants, `git send-pack` | The point of no return for anything already committed. Force additionally discards commits on the remote. |
 | `git reset --hard` | Discards every uncommitted change. |
 | `git clean -f` | Deletes untracked files, which git never had a copy of. |
 | `git branch -D` | Force-deletes without checking the branch is merged. |
 | `git checkout .`, `git restore .`, and the named-file forms | Discards uncommitted changes. The single-file form is included because it is the one people forget. |
+| `git checkout -f`, `git switch -f`, `git switch --discard-changes` | Switches branch and discards every uncommitted change on the way. |
+| `git read-tree -u`, `git read-tree --reset` | Overwrites the index or working tree from a tree. |
+| `git branch -f` | Moves an existing branch, and the commits it pointed at stop being reachable from it. |
+| `git update-ref` | Moves a ref directly, without the checks `branch` or `reset` make. |
+| `git tag -d` | Deletes a tag, which no reflog records. |
 | `git rebase`, `git commit --amend` | Rewrites history, and loses commits when a conflict is resolved wrongly. |
 | `git stash drop`, `git stash clear` | Discards work nothing else references. |
 | `git worktree remove --force` | Removes a worktree along with uncommitted work in it. |

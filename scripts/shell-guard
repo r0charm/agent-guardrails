@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Guards indirection: commands whose real text is not in the command. See
+# ../policies/shell.md.
+#
+# Every other guard reads the command it is given. These hand the shell text
+# that only exists at run time, a pipe, a variable or a substitution, so no
+# other guard can see what will run. Each is an ask, not a verdict on what
+# runs: it says the guards are blind here.
+. "$(dirname "$0")/lib.sh"
+
+# The start of a command: the start of the line, or after a separator.
+C='(^|[;&|(]) *'
+# The end of a command word.
+E='( |;|&|\)|$)'
+
+ASK=(
+  $'\\| *(sudo +)?(ba|z|da|k)?sh( +-[a-z]+)*( |;|&|\\)|$)\tpipes text into a shell, so what runs is not in the command the guards read'
+  $'\\| *(sudo +)?(python3?|perl|ruby|node)( +-)? *($|[;&)])\tpipes text into an interpreter, so what runs is not in the command the guards read'
+  $'(^|[;&|( ])((ba|z)?sh|source|\\.) +<\\(\truns the output of a command as a script, which the guards cannot read'
+  "${C}eval +\\\$[A-Za-z_{]"$'\tevaluates a variable as a command, which the guards cannot read'
+  "${C}\\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?${E}"$'\truns a command named by a variable, which the guards cannot read'
+  "${C}\\\$\\([^)]*\\)${E}"$'\truns a command produced by a substitution, which the guards cannot read'
+  "${C}(git|kubectl|helm|terraform|aws) +\\\$"$'\tgives a guarded tool its subcommand from a variable, so the guard for it cannot read the verb'
+)
+
+guard_run '(\||eval|\$|<\()' "$@"
