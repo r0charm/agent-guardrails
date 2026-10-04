@@ -1,0 +1,25 @@
+# Guards infrastructure as code: Terraform, OpenTofu and Terragrunt. See
+# policy.md.
+#
+# The three share verbs, so one list covers them. Terragrunt puts its own words
+# between the binary and the verb (`run-all apply`, `run --all -- apply`), so
+# for it the verb is matched as any later word rather than the first.
+
+# The start of the tool: the start of the line, or after a separator or quote.
+S="(^|[ '\";&|(])"
+E="([ '\";&|)]|\$)"
+T=$'\t'
+# terraform or tofu, with an optional -chdir before the verb.
+TF="${S}(terraform|tofu)( +-chdir=[^ ]+)? +"
+# terragrunt, then any of its own words before the verb.
+TG="${S}terragrunt( +[^ ]+)* +"
+
+ASK=(
+  "(${TF}|${TG})(apply|destroy)${E}${T}changes or destroys the infrastructure the configuration manages"
+  "(${TF}|${TG})(import|state +(rm|mv|push|replace-provider))${E}${T}rewrites the state file, which can detach real resources from the plan that manages them"
+  "(${TF}|${TG})force-unlock${E}${T}releases a state lock another run may still hold, so two runs can write the state at once"
+  "(${TF}|${TG})workspace +delete${E}${T}deletes a workspace and its state, orphaning whatever it managed"
+)
+
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])(terraform|tofu|terragrunt)([^[:alnum:]_-]|$)'

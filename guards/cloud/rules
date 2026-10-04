@@ -24,8 +24,7 @@ ASK=(
   $'ec2 +(run-instances|stop-instances|reboot-instances|modify-|create-|delete-|revoke-|authorize-)\tchanges compute or its network exposure'
   $'cloudformation +(create-stack|update-stack|execute-change-set)\tprovisions or changes infrastructure'
   $'(lambda|apigateway|events|ecs|eks) +(create-|update-|delete-|put-|deploy)\tchanges deployed infrastructure'
-  $'terraform +(apply|destroy|import|state)\tchanges infrastructure or the state file that tracks it'
 )
 
 # Commands this guard looks at at all, so it stays out of the others' way.
-SCOPE='(^|[^[:alnum:]_-])(aws|terraform|docker)([^[:alnum:]_-]|$)'
+SCOPE='(^|[^[:alnum:]_-])(aws|docker)([^[:alnum:]_-]|$)'

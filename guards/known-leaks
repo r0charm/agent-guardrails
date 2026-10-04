@@ -11,13 +11,9 @@ npm run deploy
 python3 -c "import subprocess; subprocess.run(['git','push'])"
 perl -e 'system("git","push")'
 # Another client for a guarded resource.
-gh api -X DELETE repos/o/r/git/refs/heads/main
-gh repo delete o/r --yes
 oc delete project prod
 k delete ns prod
 curl -X DELETE https://k8s/api/v1/namespaces/prod
-tofu apply
-terragrunt run-all apply
 # Tools nothing guards.
 psql -c 'DROP DATABASE prod'
 mysql -e 'DROP TABLE users'

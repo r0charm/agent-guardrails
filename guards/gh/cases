@@ -1,0 +1,56 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied
+DENY gh repo delete o/r --yes
+DENY gh -R o/r repo delete
+# the raw API door
+ASK gh api -X DELETE repos/o/r/git/refs/heads/main
+ASK gh api --method PATCH repos/o/r -f visibility=public
+ASK gh api --method=PUT repos/o/r/branches/main/protection
+ASK gh api repos/o/r/issues -f title=x
+ASK gh api repos/o/r/git/refs -F ref=refs/heads/x --field sha=y
+ASK gh api graphql -f query='mutation { deleteRef(input:{}) { clientMutationId } }'
+# outward actions
+ASK gh pr merge 1 --admin
+ASK gh pr merge --squash
+ASK gh pr review 1 --approve
+ASK gh issue delete 3 --yes
+ASK gh run delete 9
+ASK gh release create v1
+ASK gh release delete v1 --yes
+ASK gh repo edit --visibility public
+ASK gh repo archive o/r
+ASK gh repo create x --public
+ASK gh gist create notes.md
+ASK gh secret set TOKEN
+ASK gh variable delete X
+ASK gh workflow run deploy.yml
+ASK gh ssh-key add k.pub
+ASK gh auth token
+ASK cd x && gh pr merge
+# reads, and writes that stay reversible, stay silent
+PASS gh pr list
+PASS gh pr view 1
+PASS gh pr diff 1
+PASS gh pr checks 1
+PASS gh pr create --fill
+PASS gh pr comment 1 -b x
+PASS gh pr review 1 --comment -b x
+PASS gh pr close 1
+PASS gh issue create -t x
+PASS gh issue view 3
+PASS gh run list
+PASS gh run view 9 --log
+PASS gh release list
+PASS gh repo view o/r
+PASS gh repo clone o/r
+PASS gh repo create x --private
+PASS gh secret list
+PASS gh auth status
+PASS gh api repos/o/r/pulls
+PASS gh api repos/o/r/pulls --paginate -q .[].title
+PASS gh api graphql -f query='{ viewer { login } }'
+PASS gh search prs --merged
+PASS echo merge | grep gh

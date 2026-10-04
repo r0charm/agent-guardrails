@@ -1,0 +1,37 @@
+# Guards the GitHub CLI. See policy.md.
+#
+# gh reaches the remote directly, so what the git guard asks on the way out,
+# a push, a deleted ref, has a second door here that never touches git.
+
+# `gh`, an optional -R/--repo before the subcommand, then the subcommand.
+G="(^|[ '\";&|(])gh( +(-R|--repo)[ =][^ ]+)* +"
+E="([ '\";&|)]|\$)"
+T=$'\t'
+
+DENY=(
+  "${G}repo +delete${E}${T}deletes the repository, its issues, pull requests and wiki, which nothing restores"
+)
+
+ASK=(
+  # gh api is the raw door: anything the commands below guard, it can do too.
+  "${G}api( .*)? (-X|--method)[ =]?(POST|PUT|PATCH|DELETE)${E}${T}calls the GitHub API with a method that changes something"
+  # Fields switch gh api to POST. REST paths carry a slash and graphql does not,
+  # so a graphql read with -f stays silent and only a mutation asks.
+  "${G}api( .*)? [^ -][^ ]*/[^ ]*( .*)? (-f|-F|--field|--raw-field|--input)( |=)${T}sends fields to a REST endpoint, which makes it a POST"
+  "${G}api +graphql.*mutation${T}runs a GraphQL mutation"
+
+  "${G}pr +merge${E}${T}merges into the base branch, the remote point of no return"
+  "${G}pr +review( .*)? (--approve|-a)${E}${T}approves a pull request, which branch protection counts as a human's review"
+  "${G}(issue|run|cache|label) +delete${E}${T}deletes what no command restores"
+  "${G}release +(create|delete|delete-asset|edit|upload)${E}${T}publishes or changes a release others download"
+  "${G}repo +(archive|unarchive|rename|edit|deploy-key)${E}${T}changes the repository's settings, name or access"
+  "${G}repo +create( .*)? --public${E}${T}creates a public repository"
+  "${G}gist +(create|edit|delete)${E}${T}publishes or changes a gist, which is reachable by URL even when secret"
+  "${G}(secret|variable) +(set|delete|remove)${E}${T}changes what CI runs with"
+  "${G}workflow +(run|enable|disable)${E}${T}triggers or toggles a workflow, which can deploy"
+  "${G}(ssh-key|gpg-key) +(add|delete)${E}${T}changes who can authenticate as this account"
+  "${G}auth +token${E}${T}prints the GitHub token into the session transcript"
+)
+
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])gh([^[:alnum:]_-]|$)'

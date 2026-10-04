@@ -12,11 +12,8 @@ DENY aws cloudformation delete-stack --stack-name s
 ASK aws ecr get-login-password
 ASK aws sts assume-role --role-arn a
 ASK aws ecr batch-delete-image --repository-name r
-ASK terraform apply
-ASK terraform state rm x
 # reads, including resources named after verbs
 PASS aws ec2 describe-instances --filters Name=tag:Name,Values=delete-me
 PASS aws ecr describe-images --repository-name create-service
-PASS terraform plan
 PASS aws iam list-roles
 PASS aws sts get-caller-identity

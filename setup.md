@@ -1,6 +1,6 @@
 # Setup
 
-Deterministic limits on what an agent does without asking, across git, Kubernetes, cloud and data.
+Deterministic limits on what an agent does without asking.
 
 ## Install
 

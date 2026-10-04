@@ -1,0 +1,33 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# changes infrastructure
+ASK terraform apply
+ASK terraform apply -destroy
+ASK terraform -chdir=infra destroy
+ASK tofu apply -auto-approve
+ASK tofu destroy
+ASK terragrunt apply
+ASK terragrunt run-all apply
+ASK terragrunt run --all -- destroy
+ASK cd infra && terragrunt apply
+# rewrites or unlocks state
+ASK terraform state rm x
+ASK tofu import aws_s3_bucket.b b
+ASK terragrunt state mv a b
+ASK terraform force-unlock 1234
+ASK tofu workspace delete old
+# reads and planning stay silent
+PASS terraform plan
+PASS terraform plan -destroy
+PASS tofu plan -out=apply.tfplan
+PASS terragrunt run-all plan
+PASS terraform state list
+PASS tofu state show aws_s3_bucket.b
+PASS terraform state pull
+PASS terraform workspace list
+PASS terraform output
+PASS terraform fmt
+PASS tofu validate
+PASS terragrunt hclfmt

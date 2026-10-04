@@ -1,6 +1,6 @@
 # Cloud Policy
 
-The AWS control plane and Terraform: what provisions, exposes or destroys infrastructure. Data services belong to `data.md`.
+The AWS control plane: what provisions, exposes or destroys infrastructure. Data services belong to `data.md`.
 
 ## Denied
 
@@ -29,9 +29,7 @@ The AWS control plane and Terraform: what provisions, exposes or destroys infras
 
 ## Asked: provisioning and exposure
 
-`ec2 run-instances/stop/reboot/modify-*/create-*/delete-*/authorize-*/revoke-*`, `cloudformation create-stack/update-stack/execute-change-set`, `lambda|apigateway|events|ecs|eks create-*/update-*/delete-*/put-*`, `terraform apply/destroy/import/state`.
-
-`terraform state` is included because rewriting state detaches real resources from the plan that manages them, which is worse than destroying them openly.
+`ec2 run-instances/stop/reboot/modify-*/create-*/delete-*/authorize-*/revoke-*`, `cloudformation create-stack/update-stack/execute-change-set`, `lambda|apigateway|events|ecs|eks create-*/update-*/delete-*/put-*`.
 
 ## Not guarded
 
