@@ -1,6 +1,6 @@
 # agent-guardrails
 
-Command guards for coding agents. Bash guards that deny or ask on destructive commands before they run, for Claude Code, opencode and Pi. Standalone: no skills, no other dependency.
+Command guards for coding agents. Bash guards that deny or ask on destructive commands before they run, wired into the coding agent harnesses that run them. Standalone: no skills, no other dependency.
 
 > **A safety net, not a security boundary.** Each guard decides from the command text alone, so a determined or creative command can slip past a pattern. Real protection is credential scope (a read-only cloud profile, a kubeconfig without prod) and isolation (containers, worktrees, sandboxes). These guards catch the mistakes those let through. Layering is in [`setup.md`](setup.md).
 
