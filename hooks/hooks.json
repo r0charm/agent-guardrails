@@ -4,12 +4,7 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/git-guard" },
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/fs-guard" },
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/kubernetes-guard" },
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/data-guard" },
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/cloud-guard" },
-          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/shell-guard" }
+          { "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/scripts/guard" }
         ]
       }
     ]

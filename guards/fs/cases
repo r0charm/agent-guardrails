@@ -1,0 +1,23 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# deletes git cannot recover
+ASK rm -rf .claude/worktrees
+ASK rm -rf ../app-worktree-feat
+ASK find . -path '*worktree*' -delete
+ASK rm -r -f .claude
+ASK rm --recursive .claude
+ASK rm -rf ./.claude
+ASK rm -rf "$HOME/.claude"
+ASK rm -rf .git
+ASK rm -rf ../app/.git/
+ASK rm -rf .git && git init
+# ordinary deletes stay silent
+PASS rm .claude/settings.local.json
+PASS rm -f .git/index.lock
+PASS rm -rf .github/workflows/old.yml
+PASS rm -f .gitignore
+PASS rm -rf node_modules
+PASS rm build/app.js
+PASS confirm worktree

@@ -1,7 +1,7 @@
 # Filesystem policy
 
 `rm` matches no other guard, so a recursive delete of a worktree path takes
-uncommitted work in every worktree with it and nothing recovers it. `fs-guard`
+uncommitted work in every worktree with it and nothing recovers it. This guard
 closes that.
 
 | Command | Why it needs a human |

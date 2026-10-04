@@ -1,6 +1,6 @@
 # Shell Policy
 
-Every other guard reads the command it is given. A pipe into a shell, a variable run as a command or a substitution hands the shell text that only exists at run time, so no guard can see what will run. `shell-guard` asks on those, because it is the one place the rest are blind.
+Every other guard reads the command it is given. A pipe into a shell, a variable run as a command or a substitution hands the shell text that only exists at run time, so no guard can see what will run. This guard asks on those, because it is the one place the rest are blind.
 
 | Command | Why it needs a human |
 |---|---|
@@ -15,4 +15,4 @@ All are **ask**: none is destructive in itself, it is that the guards cannot tel
 
 ## Known limits
 
-What runs from a file the command names is out of reach for a guard that decides from the command alone: `bash deploy.sh`, `make release`, `npm run deploy`, and a program passing argv as a list (`subprocess.run(['git', 'push'])`). That is what credential scope and isolation are for. `scripts/test` lists each as a known leak, so a change that closes or widens one shows up.
+What runs from a file the command names is out of reach for a guard that decides from the command alone: `bash deploy.sh`, `make release`, `npm run deploy`, and a program passing argv as a list (`subprocess.run(['git', 'push'])`). That is what credential scope and isolation are for. `guards/known-leaks` lists each, and `scripts/test` checks every guard stays silent on them, so a change that closes or widens one shows up.

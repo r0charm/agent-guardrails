@@ -8,9 +8,7 @@ import { fileURLToPath } from "url"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const scripts = path.join(repoRoot, "scripts")
-const guards = ["git-guard", "fs-guard", "kubernetes-guard", "data-guard", "cloud-guard", "shell-guard"].map((g) =>
-  path.join(scripts, g),
-)
+const guards = [path.join(scripts, "guard")]
 
 export const AgentGuardrails: Plugin = async ({ $ }) => {
   return {

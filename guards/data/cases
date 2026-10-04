@@ -1,0 +1,26 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied
+DENY aws dynamodb delete-table --table-name t
+DENY aws s3 rb s3://b
+DENY aws rds delete-db-instance --db-instance-identifier d
+DENY db.dropDatabase()
+DENY db.u.deleteMany({})
+DENY mongorestore --drop d
+# the ones that do not read as destructive
+ASK aws s3 sync . s3://b --delete
+ASK aws dynamodb put-item --table-name t
+ASK aws s3 mv s3://a s3://b
+# secrets out, data out, ordinary writes
+ASK aws secretsmanager get-secret-value --secret-id s
+ASK mongodump --uri u
+ASK db.u.drop()
+# reads, including buckets and keys named after verbs
+PASS aws s3 ls s3://my-delete-bucket
+PASS aws s3 ls s3://backups/drop-2026
+PASS aws s3api head-object --bucket b --key drop.json
+PASS aws dynamodb scan --table-name t
+PASS db.u.find({})
+PASS aws rds describe-db-instances

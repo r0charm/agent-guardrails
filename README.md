@@ -33,7 +33,7 @@ Three outcomes per command: **deny** (exit 2, cannot be lifted in session), **as
 
 Destructive or irreversible commands deny or ask; reads stay silent, so a confirmation keeps its meaning. Verbs are anchored, so a match on a word inside an argument does not fire.
 
-`setup.md` has what is covered and how to confirm the guards fire; per-guard policies are in `policies/`. Read it before trusting them: a guard that was never wired is worse than none.
+`setup.md` has what is covered and how to confirm the guards fire; each guard and its policy is a folder in `guards/`. Read it before trusting them: a guard that was never wired is worse than none.
 
 ## Test
 

@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# Guards kubectl and helm. See ../policies/kubernetes.md.
+# Guards kubectl and helm. See policy.md.
 #
 # Names no cluster and detects no environment, on purpose. Deciding which
 # context is production is a way to fail, and a guard that fails to recognise
@@ -11,7 +10,6 @@
 # `deploy/scaler` and `create` on `reason=Created`. Six of eight ordinary reads
 # asked before this was anchored, and a guard that cries wolf on reads is one
 # people learn to click through.
-. "$(dirname "$0")/lib.sh"
 
 S="(^|[ '\";&|(])"
 E="([ '\";&|)]|\$)"
@@ -20,7 +18,7 @@ T=$'\t'
 
 # `auth can-i create pods` asks whether a verb would be permitted. It is the one
 # read that legitimately carries a mutation verb as an argument.
-case " $* " in *" can-i "*) exit 0 ;; esac
+SKIP='(^| )can-i( |$)'
 
 DENY=(
   "${S}delete +(namespace|ns) ${T}takes every workload, secret and volume in the namespace with it"
@@ -52,4 +50,5 @@ ASK=(
   "${S}helm +(install|upgrade|rollback|uninstall|delete)${E}${T}changes a release and everything in it"
 )
 
-guard_run '(^|[^[:alnum:]_-])(kubectl|helm)([^[:alnum:]_-]|$)' "$@"
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])(kubectl|helm)([^[:alnum:]_-]|$)'

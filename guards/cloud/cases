@@ -1,0 +1,22 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied
+DENY aws ec2 terminate-instances --instance-ids i
+DENY aws iam attach-role-policy --role-name r
+DENY aws kms schedule-key-deletion --key-id k
+DENY aws eks update-kubeconfig --name c
+DENY aws cloudformation delete-stack --stack-name s
+# credentials, role changes, the rollback you did not know you were deleting
+ASK aws ecr get-login-password
+ASK aws sts assume-role --role-arn a
+ASK aws ecr batch-delete-image --repository-name r
+ASK terraform apply
+ASK terraform state rm x
+# reads, including resources named after verbs
+PASS aws ec2 describe-instances --filters Name=tag:Name,Values=delete-me
+PASS aws ecr describe-images --repository-name create-service
+PASS terraform plan
+PASS aws iam list-roles
+PASS aws sts get-caller-identity

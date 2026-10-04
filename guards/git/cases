@@ -1,0 +1,72 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied, because they remove the recovery net
+DENY git reflog expire --all
+DENY git gc --prune=now
+DENY git filter-branch x
+DENY git update-ref -d refs/x
+# asked
+ASK git push origin main
+ASK git push --force
+ASK git reset --hard
+ASK git clean -fd
+ASK git branch -D feat
+ASK git restore src/a.ts
+ASK git rebase main
+ASK git commit --amend
+ASK git stash drop
+ASK git worktree remove --force w
+# other verbs with the same effect as the ones above
+ASK git send-pack origin main
+ASK git checkout -f main
+ASK git switch -f main
+ASK git switch --discard-changes main
+ASK git read-tree -u --reset HEAD
+ASK git branch -f main HEAD~3
+ASK git update-ref refs/heads/main HEAD~5
+ASK git tag -d v1
+ASK git tag --delete v1
+# what the shell strips before running, quotes, backslashes and tabs
+ASK "git" push
+ASK git "push" origin main
+ASK git 'reset' --hard
+ASK g'i't push
+ASK git	push
+# the everyday path stays silent
+PASS git switch main
+PASS git switch -c feat
+PASS git tag v1
+PASS git tag -l
+PASS git branch --list feat
+PASS git commit -m "don't push yet"
+PASS git status
+PASS git log
+PASS git commit -m x
+PASS git diff HEAD
+PASS git fetch origin
+# global options before the verb, and chains
+ASK git -C repo push
+ASK cd x && git push origin main
+ASK git --no-pager reset --hard HEAD~1
+ASK git push -f origin feat
+ASK git checkout -- src/a.ts
+ASK git branch --delete --force feat
+# a verb ended by a quote or a shell separator rather than a space
+ASK git push;
+ASK git push && echo done
+ASK bash -c 'git push'
+ASK sh -c "git rebase"
+ASK (git reset --hard)
+ASK git branch -D feat;
+PASS bash -c 'git stash push'
+# verbs that appear as arguments, messages or the safe lowercase flag
+PASS git stash push -m wip
+PASS git branch -d merged
+PASS git commit -m 'fix rebase docs'
+PASS git log --grep=push
+PASS git config --get remote.origin.pushurl
+PASS git checkout -b feat
+PASS git clean -n
+PASS git restore --staged src/a.ts

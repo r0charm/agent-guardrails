@@ -1,12 +1,10 @@
-#!/usr/bin/env bash
 # Guards indirection: commands whose real text is not in the command. See
-# ../policies/shell.md.
+# policy.md.
 #
 # Every other guard reads the command it is given. These hand the shell text
 # that only exists at run time, a pipe, a variable or a substitution, so no
 # other guard can see what will run. Each is an ask, not a verdict on what
 # runs: it says the guards are blind here.
-. "$(dirname "$0")/lib.sh"
 
 # The start of a command: the start of the line, or after a separator.
 C='(^|[;&|(]) *'
@@ -23,4 +21,5 @@ ASK=(
   "${C}(git|kubectl|helm|terraform|aws) +\\\$"$'\tgives a guarded tool its subcommand from a variable, so the guard for it cannot read the verb'
 )
 
-guard_run '(\||eval|\$|<\()' "$@"
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(\||eval|\$|<\()'

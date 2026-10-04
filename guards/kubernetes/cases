@@ -1,0 +1,38 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied
+DENY kubectl delete namespace prod
+DENY kubectl delete pvc d
+DENY kubectl delete -n ns pvc d
+DENY kubectl delete crd w.example.com
+DENY kubectl delete po --all
+DENY kubectl delete po --force --grace-period=0 x
+# capability grants
+ASK kubectl exec -it p -- sh
+ASK kubectl attach p
+ASK kubectl port-forward svc/db 5432
+ASK kubectl proxy
+ASK kubectl cp a p:/b
+# secret reads and state changes
+ASK kubectl get secret s -o yaml
+ASK kubectl --context c delete deploy/a
+ASK kubectl apply -f x
+ASK kubectl scale deploy/a --replicas=0
+ASK kubectl config use-context prod
+ASK helm upgrade a .
+# verbs after a quote or a shell separator, not only a space
+ASK bash -c 'helm upgrade a .'
+ASK cd x&&helm install a .
+ASK sh -c "kubectl proxy"
+ASK kubectl drain n1;
+PASS kubectl get pods -l 'app=delete'
+# reads, including ones whose arguments carry mutation words
+PASS kubectl get pods
+PASS kubectl auth can-i create pods
+PASS kubectl get pods -l app=delete-me
+PASS kubectl get events --field-selector reason=Created
+PASS kubectl logs deploy/scaler
+PASS kubectl describe deploy/label-printer
+PASS kubectl get secret s

@@ -10,9 +10,7 @@ type GuardResult =
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const scripts = path.join(repoRoot, "scripts")
-const guards = ["git-guard", "fs-guard", "kubernetes-guard", "data-guard", "cloud-guard", "shell-guard"].map((guard) =>
-  path.join(scripts, guard),
-)
+const guards = [path.join(scripts, "guard")]
 
 function runGuard(guard: string, command: string, signal?: AbortSignal): Promise<GuardResult> {
   return new Promise((resolve, reject) => {

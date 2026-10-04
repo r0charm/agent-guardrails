@@ -1,7 +1,5 @@
-#!/usr/bin/env bash
 # Guards the AWS control plane: EC2, IAM, ECR, CloudFormation, EKS.
-# See ../policies/cloud.md. Data services are data-guard's, not this one's.
-. "$(dirname "$0")/lib.sh"
+# See policy.md. Data services are the data guard's, not this one's.
 
 DENY=(
   $'ec2 +terminate-instances\tterminates instances, and instance storage with them'
@@ -29,4 +27,5 @@ ASK=(
   $'terraform +(apply|destroy|import|state)\tchanges infrastructure or the state file that tracks it'
 )
 
-guard_run '(^|[^[:alnum:]_-])(aws|terraform|docker)([^[:alnum:]_-]|$)' "$@"
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])(aws|terraform|docker)([^[:alnum:]_-]|$)'

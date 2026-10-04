@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# The one entry point every harness calls. Runs each guard in guards/*/ and
+# returns a single decision for the command.
+#
+# A guard is a folder: `rules` (what it matches), `cases` (its tests) and
+# `policy.md` (why). Adding one is adding a folder, dropping one is deleting
+# it; nothing here or in the harness wiring names a guard.
+#
+# `rules` is sourced, in a subshell of its own so no guard sees another's
+# settings, and defines:
+#
+#   SCOPE           regex a command must match for this guard to care at all,
+#                   so a git guard stays out of the way of kubectl.
+#   DENY            patterns that must never run, whoever asks. Exit 2, which
+#                   stops the call before permission rules are even evaluated.
+#   ASK             patterns that need a human. Emits the PreToolUse ask
+#                   decision, which survives auto mode where the classifier
+#                   would otherwise decide.
+#   SKIP            optional regex that silences this guard for the command.
+#   CASE_SENSITIVE  set to 1 where case carries meaning, as in git, where
+#                   `branch -D` force-deletes and `branch -d` refuses an
+#                   unmerged branch.
+#
+# Each list entry is "pattern<TAB>reason", so the reason shown names the rule
+# that fired rather than the whole list.
+#
+# Any deny wins. Otherwise every ask is collected into one decision, so a
+# harness that confirms per decision confirms once. Anything matching neither
+# exits 0 and takes whatever path the permission rules give it. Guards never
+# grant: a guard that returns "allow" would override rules written elsewhere,
+# and nothing here is worth that.
+#
+# Usage: guard [--only NAME] [COMMAND...]
+#   With no COMMAND, reads Claude Code's hook event as JSON on stdin.
+#   --only runs one guard, which is how scripts/test checks each in isolation.
+
+set -uo pipefail
+
+guards="$(cd "$(dirname "$0")/.." && pwd)/guards"
+
+only=""
+if [ "${1:-}" = "--only" ]; then
+  only="${2:-}"
+  shift 2
+fi
+
+# Claude Code sends the event as JSON on stdin. Everything else passes the
+# command as arguments, which is also how the guards are tested.
+if [ "$#" -gt 0 ]; then
+  command="$*"
+elif command -v jq >/dev/null 2>&1; then
+  command=$(jq -r '.tool_input.command // empty')
+else
+  # No jq means no way to read the event. Say so rather than exiting 0 and
+  # leaving the caller believing a guard ran.
+  echo "GUARD ERROR: jq is required to read the hook event." >&2
+  exit 2
+fi
+[ -n "$command" ] || exit 0
+
+# The shell strips quotes and backslashes before it runs anything, so
+# `"git" push`, `git 'reset' --hard` and `git<TAB>push` run as the plain
+# command. Match the raw text and the text as the shell will see it, one per
+# line, so a pattern written for one catches the other.
+seen=$(printf '%s' "$command" | tr -d "'\"\\\\" | tr '\t' ' ')
+seen="$command"$'\n'"$seen"
+
+# Prints the reason of the first entry that matches, or returns 1.
+match() {
+  local entry pattern flags=-qiE
+  [ -n "${CASE_SENSITIVE:-}" ] && flags=-qE
+  for entry in "$@"; do
+    pattern="${entry%%	*}"
+    [ -n "$pattern" ] || continue
+    if printf '%s' "$seen" | grep "$flags" "$pattern"; then
+      printf '%s' "${entry#*	}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Prints "DENY<TAB>reason", "ASK<TAB>reason" or nothing.
+evaluate() (
+  SCOPE="" SKIP="" CASE_SENSITIVE="" DENY=() ASK=()
+  # shellcheck source=/dev/null
+  . "$1"
+  [ -n "$SCOPE" ] || { printf 'DENY\t%s has no SCOPE, so it cannot be trusted to run' "$1"; exit; }
+  printf '%s' "$seen" | grep -qE "$SCOPE" || exit 0
+  if [ -n "$SKIP" ] && printf '%s' "$seen" | grep -qE "$SKIP"; then exit 0; fi
+  if reason=$(match "${DENY[@]:-}"); then printf 'DENY\t%s' "$reason"; exit; fi
+  if reason=$(match "${ASK[@]:-}"); then printf 'ASK\t%s' "$reason"; fi
+)
+
+asks=()
+for rules in "$guards"/*/rules; do
+  [ -f "$rules" ] || continue
+  name=$(basename "$(dirname "$rules")")
+  [ -z "$only" ] || [ "$name" = "$only" ] || continue
+  result=$(evaluate "$rules")
+  case "$result" in
+    DENY*)
+      echo "BLOCKED ($name): ${result#*	}" >&2
+      echo "" >&2
+      echo "  Command: $command" >&2
+      echo "" >&2
+      echo "This is denied outright, not pending approval. Run it yourself if you mean it." >&2
+      exit 2
+      ;;
+    ASK*) asks+=("$name: ${result#*	}") ;;
+  esac
+done
+
+if [ "${#asks[@]}" -gt 0 ]; then
+  reason=$(printf '%s; ' "${asks[@]}")
+  jq -n --arg reason "${reason%; }" '{
+    hookSpecificOutput: {
+      hookEventName: "PreToolUse",
+      permissionDecision: "ask",
+      permissionDecisionReason: $reason
+    }
+  }'
+fi
+exit 0

@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-# Guards git. See ../policies/git.md.
-. "$(dirname "$0")/lib.sh"
+# Guards git. See policy.md.
 
 CASE_SENSITIVE=1
 
@@ -45,4 +43,5 @@ ASK=(
   "${G}submodule +deinit( .*)? (-f|--force)${T}discards uncommitted work inside the submodule"
 )
 
-guard_run '(^|[^[:alnum:]_-])git([^[:alnum:]_-]|$)' "$@"
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])git([^[:alnum:]_-]|$)'

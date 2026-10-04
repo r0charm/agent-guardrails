@@ -15,25 +15,18 @@ scripts/test
 Then check each outcome by hand:
 
 ```bash
-scripts/git-guard "git reflog expire --all"          # BLOCKED, exit 2
-scripts/data-guard "aws s3 sync . s3://b --delete"   # an ask decision
-scripts/kubernetes-guard "kubectl get pods"          # silent, exit 0
+scripts/guard "git reflog expire --all"          # BLOCKED, exit 2
+scripts/guard "aws s3 sync . s3://b --delete"   # an ask decision
+scripts/guard "kubectl get pods"                # silent, exit 0
 ```
 
 Finally, in a real session, ask for one and confirm you are stopped. That is the only check that proves the harness is actually running them.
 
 ## What is guarded
 
-| Guard | Covers | Policy |
-|---|---|---|
-| `git-guard` | git | [policies/git.md](policies/git.md) |
-| `fs-guard` | `rm` and `find -delete` on worktrees, `.claude` and `.git` | [policies/filesystem.md](policies/filesystem.md) |
-| `kubernetes-guard` | kubectl, helm | [policies/kubernetes.md](policies/kubernetes.md) |
-| `data-guard` | DynamoDB, S3, MongoDB, RDS | [policies/data.md](policies/data.md) |
-| `cloud-guard` | EC2, IAM, ECR, CloudFormation, EKS, Terraform | [policies/cloud.md](policies/cloud.md) |
-| `shell-guard` | pipes into a shell, `eval`, variables and substitutions run as commands | [policies/shell.md](policies/shell.md) |
+Each folder in [`guards/`](guards) is one guard: `rules` is what it matches, `cases` its tests, `policy.md` why. Commands no guard can see are listed in [`guards/known-leaks`](guards/known-leaks).
 
-Split by what breaks rather than by vendor, which is why DynamoDB is data and not cloud: `aws dynamodb delete-table` and `db.collection.drop()` fail the same way.
+Guards are split by what breaks rather than by vendor, which is why DynamoDB is data and not cloud: `aws dynamodb delete-table` and `db.collection.drop()` fail the same way.
 
 ## Tiers
 
@@ -84,11 +77,13 @@ A permission rule could express much of what these guards do, since a Bash patte
 
 ## Changing a guard
 
-Guards take the command as an argument, so a change is checked without a harness:
+`scripts/guard` takes the command as an argument, so a change is checked without a harness. `--only` runs one guard:
 
 ```bash
-scripts/kubernetes-guard "kubectl delete namespace prod"
+scripts/guard --only kubernetes "kubectl delete namespace prod"
 echo $?   # 2 denied, 0 with JSON asked, 0 with no output passed
 ```
 
-Add the case to `scripts/test` in the same edit, then run the suite. Every pattern in here has a test, including the reads that must stay silent.
+Add the case to the guard's `cases` in the same edit, then run `scripts/test`. Every pattern has a test, including the reads that must stay silent.
+
+To add a guard, create `guards/<name>/` with `rules`, `cases` and `policy.md`; the header of `scripts/guard` lists what `rules` defines. To drop one, delete its folder. Nothing else names a guard.
