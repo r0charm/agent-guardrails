@@ -26,7 +26,7 @@ Finally, in a real session, ask for one and confirm you are stopped. That is the
 
 Each folder in [`guards/`](guards) is one guard: `rules` is what it matches, `cases` its tests, `policy.md` why. Commands no guard can see are listed in [`guards/known-leaks`](guards/known-leaks).
 
-Guards are split by what breaks rather than by vendor, which is why DynamoDB is data and not cloud: `aws dynamodb delete-table` and `db.collection.drop()` fail the same way.
+Guards are split by system, one folder each, so the unit you add or drop is a tool you adopt or stop using. Within a guard, rules are grouped by what breaks: the data itself, the recovery net, writes, data out, access.
 
 ## Tiers
 

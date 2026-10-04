@@ -23,7 +23,6 @@ sqlite3 app.db 'DELETE FROM users'
 pulumi destroy --yes
 gcloud projects delete p
 az group delete -n rg --yes
-cat ~/.aws/credentials
 # Deletes git would recover only if committed, silent by design.
 rm -rf src
 find . -delete

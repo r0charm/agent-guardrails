@@ -5,44 +5,15 @@
 # denied: the data itself
 DENY aws dynamodb delete-table --table-name t
 DENY aws --region eu-west-1 dynamodb delete-table --cli-input-json file://x.json
-DENY db.dropDatabase()
-DENY db.getSiblingDB("p").dropDatabase()
-DENY db.runCommand({dropDatabase: 1})
-DENY db.u.deleteMany({})
-DENY db.users.deleteMany( { } )
-DENY db.getCollection("users").deleteMany({}, {writeConcern: {w: 1}})
-DENY db.u.remove({})
-DENY mongorestore --drop d
-DENY mongoimport --drop -c users f.json
 # denied: the recovery net
 DENY aws dynamodb delete-backup --backup-arn a
 DENY aws dynamodb update-continuous-backups --table-name t --point-in-time-recovery-specification PointInTimeRecoveryEnabled=false
 # the ones that do not read as destructive
 ASK aws dynamodb put-item --table-name t
 ASK aws dynamodb update-time-to-live --table-name t --time-to-live-specification Enabled=true,AttributeName=ttl
-ASK db.users.aggregate([{$out: "users"}])
-ASK db.users.aggregate([{$merge: {into: "users"}}])
-ASK db.users.renameCollection("old", true)
 # data out
-ASK mongodump --uri u
-ASK mongoexport -c users -o u.json
 ASK aws dynamodb export-table-to-point-in-time --table-arn a --s3-bucket b
 # writes
-ASK db.u.drop()
-ASK db[users].drop()
-ASK mongosh prod --eval 'db.users.drop()'
-ASK db.users.updateMany({}, {$set: {x: 1}})
-ASK db.users.updateOne({a: 1}, {$set: {b: 2}})
-ASK db.users.insertOne({a: 1})
-ASK db.users.findOneAndDelete({a: 1})
-ASK db.users.findOneAndReplace({a: 1}, {})
-ASK db.users.findOneAndUpdate({a: 1}, {$set: {}})
-ASK db.users.bulkWrite([{deleteMany: {filter: {}}}])
-ASK db.users.dropIndexes()
-ASK db.users.dropIndex("a_1")
-ASK db.runCommand({drop: "users"})
-ASK node -e "db.collection('u').deleteOne({a: 1})"
-ASK mongoimport -c users f.json
 ASK aws dynamodb delete-item --table-name t --key k
 ASK aws dynamodb batch-write-item --request-items file://w.json
 ASK aws dynamodb transact-write-items --transact-items file://t.json
@@ -55,21 +26,9 @@ ASK aws dynamodb execute-statement --statement "INSERT INTO users VALUE {'pk': '
 ASK aws dynamodb batch-execute-statement --statements file://s.json
 ASK aws dynamodb execute-transaction --transact-statements file://t.json
 ASK aws dynamodb update-continuous-backups --table-name t --point-in-time-recovery-specification PointInTimeRecoveryEnabled=true
-# access and the server
-ASK db.createUser({user: "x", pwd: "y", roles: ["root"]})
-ASK db.grantRolesToUser("x", ["root"])
-ASK db.dropUser("app")
-ASK db.dropAllUsers()
-ASK db.shutdownServer()
-ASK db.adminCommand({shutdown: 1})
+# access
 ASK aws dynamodb put-resource-policy --resource-arn a --policy file://p.json
-# reads, including tables, fields and keys named after verbs
-PASS db.u.find({})
-PASS db.users.countDocuments({})
-PASS db.users.find({}).sort({deleteMany: 1})
-PASS db.users.aggregate([{$match: {a: 1}}])
-PASS db.users.getIndexes()
-PASS mongosh prod --eval 'db.users.findOne()'
+# reads, including tables named after verbs
 PASS aws dynamodb scan --table-name t
 PASS aws dynamodb query --table-name drop-logs
 PASS aws dynamodb describe-table --table-name delete-me

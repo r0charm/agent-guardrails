@@ -1,5 +1,5 @@
 # Guards the AWS control plane: EC2, IAM, ECR, CloudFormation, EKS.
-# See policy.md. Data services are the data guard's, not this one's.
+# See policy.md. Services that hold data have guards of their own.
 
 DENY=(
   $'ec2 +terminate-instances\tterminates instances, and instance storage with them'

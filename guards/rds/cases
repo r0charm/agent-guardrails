@@ -1,0 +1,30 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied: the database
+DENY aws rds delete-db-instance --db-instance-identifier d
+DENY aws rds delete-db-cluster --db-cluster-identifier c --skip-final-snapshot
+# denied: the recovery net
+DENY aws rds delete-db-snapshot --db-snapshot-identifier s
+DENY aws rds delete-db-cluster-snapshot --db-cluster-snapshot-identifier s
+DENY aws rds delete-db-instance-automated-backup --dbi-resource-id r
+DENY aws rds modify-db-instance --db-instance-identifier d --backup-retention-period 0
+DENY aws rds modify-db-cluster --db-cluster-identifier c --backup-retention-period=0
+# asked
+ASK aws rds modify-db-snapshot-attribute --db-snapshot-identifier s --attribute-name restore --values-to-add all
+ASK aws rds generate-db-auth-token --hostname h --port 5432 --username u
+ASK aws rds modify-db-instance --db-instance-identifier d --no-deletion-protection
+ASK aws rds modify-db-instance --db-instance-identifier d --backup-retention-period 7
+ASK aws rds reboot-db-instance --db-instance-identifier d
+ASK aws rds failover-db-cluster --db-cluster-identifier c
+ASK aws rds stop-db-instance --db-instance-identifier d
+ASK aws rds restore-db-instance-from-db-snapshot --db-instance-identifier d
+ASK aws rds-data execute-statement --resource-arn a --sql "DELETE FROM users"
+ASK aws rds-data execute-statement --resource-arn a --sql "DROP TABLE users"
+ASK aws rds-data batch-execute-statement --resource-arn a --sql "INSERT INTO t VALUES (:v)"
+# reads stay silent
+PASS aws rds describe-db-instances
+PASS aws rds describe-db-snapshots --db-instance-identifier delete-me
+PASS aws rds create-db-snapshot --db-instance-identifier d --db-snapshot-identifier s
+PASS aws rds-data execute-statement --resource-arn a --sql "SELECT * FROM users"

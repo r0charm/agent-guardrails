@@ -1,0 +1,42 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied
+DENY aws s3 rb s3://b
+DENY aws s3 rb s3://b --force
+DENY aws s3api delete-bucket --bucket b
+DENY aws s3api put-bucket-versioning --bucket b --versioning-configuration Status=Suspended
+# the ones that do not read as destructive
+ASK aws s3 sync . s3://b --delete
+ASK aws s3 mv s3://a s3://b
+ASK aws s3api put-bucket-lifecycle-configuration --bucket b --lifecycle-configuration file://l.json
+ASK aws s3api delete-object --bucket b --key k --version-id v
+# data out
+ASK aws s3 cp s3://b/k ./k
+ASK aws s3 cp --recursive s3://b/ ./dump
+ASK aws s3 presign s3://b/k
+# writes and deletes
+ASK aws s3 rm s3://b --recursive
+ASK aws s3api delete-objects --bucket b --delete file://all.json
+ASK aws s3api delete-object --bucket b --key k
+ASK aws s3 cp ./build s3://b/ --recursive
+ASK aws s3 cp s3://a/k s3://b/k
+ASK aws s3api put-object --bucket b --key k --body f
+ASK aws s3 sync ./site s3://b
+# access and configuration
+ASK aws s3api put-bucket-policy --bucket b --policy file://p.json
+ASK aws s3api delete-public-access-block --bucket b
+ASK aws s3api put-object-acl --bucket b --key k --acl public-read
+ASK aws s3api delete-bucket-policy --bucket b
+ASK aws s3api put-bucket-replication --bucket b --replication-configuration file://r.json
+ASK aws s3api put-bucket-versioning --bucket b --versioning-configuration Status=Enabled
+ASK aws s3api put-object-retention --bucket b --key k --retention file://r.json
+# reads, including buckets and keys named after verbs
+PASS aws s3 ls s3://my-delete-bucket
+PASS aws s3 ls s3://backups/drop-2026
+PASS aws s3api head-object --bucket b --key drop.json
+PASS aws s3api get-bucket-policy --bucket b
+PASS aws s3api list-object-versions --bucket rm-logs
+PASS aws s3api get-bucket-versioning --bucket b
+PASS aws dynamodb import-table --s3-bucket-source S3Bucket=b

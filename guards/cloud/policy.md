@@ -1,6 +1,6 @@
 # Cloud Policy
 
-The AWS control plane: what provisions, exposes or destroys infrastructure. Data services belong to `data.md`.
+The AWS control plane: what provisions, exposes or destroys infrastructure. Services that hold data have guards of their own.
 
 ## Denied
 

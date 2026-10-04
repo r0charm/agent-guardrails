@@ -1,0 +1,41 @@
+# Guards S3, through `aws s3` and `aws s3api`. See policy.md.
+#
+# Verbs are anchored after `s3` or `s3api`, and the bucket deletes are anchored
+# at the end too: `delete-bucket` is a prefix of `delete-bucket-policy`.
+
+S="(^|[ '\";&|(])"
+E="( |;|&|\)|\$)"
+T=$'\t'
+
+DENY=(
+  "${S}s3 +rb${E}${T}removes the bucket"
+  "${S}s3api +delete-bucket${E}${T}removes the bucket"
+  # The recovery net: with versioning on, an overwrite or delete keeps the old
+  # version. Suspending it is what makes every later one final.
+  "${S}s3api +put-bucket-versioning.*Status=Suspended${T}suspends versioning, so every later overwrite or delete is final"
+)
+
+ASK=(
+  # The ones that do not read as destructive and are.
+  "${S}s3 +sync +.*--delete${T}deletes at the destination whatever is missing from the source, so the wrong direction empties the bucket"
+  "${S}s3 +mv${E}${T}is a copy followed by a delete at the source"
+  "${S}s3api +put-bucket-lifecycle(-configuration)?${E}${T}sets rules that delete objects later, unattended"
+  "${S}s3api +delete-objects?( .*)? --version-id${T}deletes an object version permanently, past what versioning would recover"
+
+  # Data out.
+  "${S}s3 +cp( +-[^ ]+)* +s3://[^ ]+ +[^s -]${T}copies data out of the bucket to local disk"
+  "${S}s3 +presign${E}${T}creates a URL that hands the object to anyone holding it"
+
+  # Writes and deletes.
+  "${S}s3 +rm${E}|${S}s3api +delete-objects?${E}${T}deletes objects"
+  "${S}s3 +cp( +-[^ ]+)* +[^ ]+ +s3://${T}writes to the bucket, overwriting any object at that key"
+  "${S}s3api +put-object${E}${T}writes to the bucket, overwriting any object at that key"
+  "${S}s3 +sync${E}${T}writes to the destination"
+
+  # Who can reach it, and how it is configured.
+  "${S}s3api +(put|delete)-(bucket-policy|public-access-block|bucket-acl|object-acl)${E}${T}changes who can reach the bucket or object"
+  "${S}s3api +(put|delete)-bucket-[a-z-]+${E}|${S}s3api +put-object-(retention|legal-hold|lock-configuration)${E}${T}changes how the bucket stores, replicates or protects objects"
+)
+
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])(s3|s3api)([^[:alnum:]_-]|$)'

@@ -1,0 +1,27 @@
+# Guards RDS, through `aws rds` and the Data API, `aws rds-data`. See
+# policy.md.
+
+S="(^|[ '\";&|(])"
+E="( |;|&|\)|\$)"
+T=$'\t'
+
+DENY=(
+  # The recovery net goes first, since its subcommands share a prefix with the
+  # database deletes below.
+  "${S}rds +delete-db-(instance|cluster)-automated-backups?${E}${T}deletes automated backups, which is what a restore would have needed"
+  "${S}rds +delete-db-(cluster-)?snapshot${E}${T}deletes a snapshot, which is what a restore would have needed"
+  "${S}rds +modify-db-(instance|cluster).*--backup-retention-period[ =]0${E}${T}turns off automated backups and deletes the ones that exist"
+  "${S}rds +delete-db-(instance|cluster)${E}${T}deletes the database"
+)
+
+ASK=(
+  # A snapshot shared with "all" is public.
+  "${S}rds +modify-db(-cluster)?-snapshot-attribute${E}${T}changes who can restore the snapshot, and \"all\" makes it public"
+  "${S}rds +generate-db-auth-token${E}${T}prints a database credential into the session transcript"
+  "${S}rds +(modify|reboot|failover|restore|stop)-db${T}changes or interrupts the database"
+  # Data API: reads stay silent, writes and schema changes ask.
+  "${S}rds-data +(batch-)?execute-statement.*(delete +from|update +[^ ]+ +set|insert +into|drop +|truncate|alter +|cli-input-json)${T}runs SQL that changes data or schema"
+)
+
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])(rds|rds-data)([^[:alnum:]_-]|$)'
