@@ -6,7 +6,7 @@ Bash guards that deny or ask on destructive commands. Each guard is a folder in 
 
 ## Editing here
 
-- `AGENTS.md` is a symlink to this file. Edit `CLAUDE.md`, never `AGENTS.md` directly.
+- `AGENTS.md` at the root is a symlink to this file, `.claude/CLAUDE.md`, which lives there so it stays out of the plugin root. Edit this file, never `AGENTS.md` directly.
 - No em-dashes in prose.
 - Grow by folders, not by edits elsewhere: a new guard is a new `guards/<name>/`, dropping one is deleting it. Never name a guard in the runner, the wiring or the docs outside its folder.
 - A change to any guard needs a case in its `cases` in the same edit, and `scripts/test` has to pass. Anchor every verb you match: unanchored, `delete` fires on `-l app=delete-me` and `scale` on `deploy/scaler`, and a guard that asks on ordinary reads is one people learn to click through.
