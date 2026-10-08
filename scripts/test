@@ -46,7 +46,8 @@ done < <(lines guards/known-leaks)
 [ -x scripts/guard ] || { fail=$((fail+1)); echo "FAIL scripts/guard is not executable"; }
 python3 -c 'import json; json.load(open("hooks/hooks.json"))' \
   || { fail=$((fail+1)); echo "FAIL hooks/hooks.json is not valid JSON"; }
-grep -q 'scripts/guard"' hooks/hooks.json || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not call scripts/guard"; }
+python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]["hooks"][0]["command"]; sys.exit(c != "\"${CLAUDE_PLUGIN_ROOT}/scripts/guard\"")' \
+  || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not call \"\${CLAUDE_PLUGIN_ROOT}/scripts/guard\", quoted"; }
 for w in .opencode/plugin.ts .pi/plugin.ts; do
   grep -q 'path.join(scripts, "guard")' "$w" || { fail=$((fail+1)); echo "FAIL $w does not call scripts/guard"; }
 done
