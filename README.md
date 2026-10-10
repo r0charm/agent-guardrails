@@ -1,6 +1,6 @@
 # agent-guardrails
 
-[![checks](https://github.com/r0charm/agent-guardrails/actions/workflows/checks.yml/badge.svg)](https://github.com/r0charm/agent-guardrails/actions/workflows/checks.yml)
+[![checks](https://github.com/r0charm/agent-guardrails/actions/workflows/checks.yml/badge.svg)](https://github.com/r0charm/agent-guardrails/actions/workflows/checks.yml) [![version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fr0charm%2Fagent-guardrails%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version)](https://github.com/r0charm/agent-guardrails/blob/main/.claude-plugin/plugin.json) [![license](https://img.shields.io/github/license/r0charm/agent-guardrails)](https://github.com/r0charm/agent-guardrails/blob/main/LICENSE)
 
 Command guards for coding agents. Bash guards that deny or ask on destructive commands before they run, wired into the coding agent harnesses that run them. Standalone: no skills, no other dependency.
 
