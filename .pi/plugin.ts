@@ -10,7 +10,7 @@ type GuardResult =
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const scripts = path.join(repoRoot, "scripts")
-const guards = [path.join(scripts, "guard")]
+const guard = path.join(scripts, "guard")
 
 function runGuard(guard: string, command: string, signal?: AbortSignal): Promise<GuardResult> {
   return new Promise((resolve, reject) => {
@@ -79,34 +79,32 @@ export default function (pi: ExtensionAPI) {
     const command = String(event.input.command ?? "").trim()
     if (!command) return
 
-    for (const guard of guards) {
-      const result = await runGuard(guard, command, ctx.signal)
+    const result = await runGuard(guard, command, ctx.signal)
 
-      if (result.outcome === "pass") continue
+    if (result.outcome === "pass") return
 
-      if (result.outcome === "deny") {
-        return { block: true, reason: result.reason, terminate: true }
+    if (result.outcome === "deny") {
+      return { block: true, reason: result.reason, terminate: true }
+    }
+
+    if (!ctx.hasUI) {
+      return {
+        block: true,
+        reason: `Needs confirmation: ${result.reason}`,
+        terminate: true,
       }
+    }
 
-      if (!ctx.hasUI) {
-        return {
-          block: true,
-          reason: `Needs confirmation: ${result.reason}`,
-          terminate: true,
-        }
-      }
+    const confirmed = await ctx.ui.confirm(
+      "Guardrail confirmation",
+      `${result.reason}\n\nCommand:\n${command}\n\nAllow this one command?`,
+    )
 
-      const confirmed = await ctx.ui.confirm(
-        "Guardrail confirmation",
-        `${result.reason}\n\nCommand:\n${command}\n\nAllow this one command?`,
-      )
-
-      if (!confirmed) {
-        return {
-          block: true,
-          reason: `Needs confirmation: ${result.reason}`,
-          terminate: true,
-        }
+    if (!confirmed) {
+      return {
+        block: true,
+        reason: `Needs confirmation: ${result.reason}`,
+        terminate: true,
       }
     }
   })

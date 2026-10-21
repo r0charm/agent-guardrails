@@ -1,6 +1,6 @@
 {
   "name": "agent-guardrails",
-  "description": "Command guards for coding agents: deny or ask on destructive git, filesystem, Kubernetes, cloud and data commands.",
+  "description": "Command guards for coding agents: deny or ask on destructive commands before they run.",
   "version": "1.0.0",
   "author": { "name": "Ricardo Rocha" },
   "license": "MIT",

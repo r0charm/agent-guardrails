@@ -111,14 +111,15 @@ for rules in "$guards"/*/rules; do
   esac
 done
 
+# Written without jq: opencode and Pi pass the command as arguments and never
+# reach the jq check above, so an ask built with jq would fail to print and
+# exit 0, passing the command. Reasons are one line; only `\` and `"` need
+# escaping.
 if [ "${#asks[@]}" -gt 0 ]; then
   reason=$(printf '%s; ' "${asks[@]}")
-  jq -n --arg reason "${reason%; }" '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "ask",
-      permissionDecisionReason: $reason
-    }
-  }'
+  reason="${reason%; }"
+  reason="${reason//\\/\\\\}"
+  reason="${reason//\"/\\\"}"
+  printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"%s"}}\n' "$reason"
 fi
 exit 0
