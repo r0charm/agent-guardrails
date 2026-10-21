@@ -14,8 +14,11 @@ export const AgentGuardrails: Plugin = async ({ $ }) => {
   return {
     // Guards take the command as an argument here and read Claude Code's event
     // from stdin there. Exit 2 is a refusal; anything a guard wants merely
-    // confirmed prints an ask decision, which opencode has no equivalent for,
-    // so it is surfaced as a refusal naming the reason rather than passed.
+    // confirmed prints an ask decision, which a plugin cannot raise here:
+    // `permission.ask` fires only when opencode's own rules already ask, so a
+    // bash call they allow never reaches it. An ask is surfaced as a refusal
+    // naming the reason rather than passed. The V2 plugin API, unreleased as
+    // of opencode 1.19, has a permission `evaluate` hook that can raise one.
     "tool.execute.before": async (input, output) => {
       if (input.tool !== "bash") return
       const command = String(output.args?.command ?? "")
