@@ -48,9 +48,23 @@ python3 -c 'import json; json.load(open("hooks/hooks.json"))' \
   || { fail=$((fail+1)); echo "FAIL hooks/hooks.json is not valid JSON"; }
 python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]["hooks"][0]["command"]; sys.exit(c != "\"${CLAUDE_PLUGIN_ROOT}/scripts/guard\"")' \
   || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not call \"\${CLAUDE_PLUGIN_ROOT}/scripts/guard\", quoted"; }
+python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]; sys.exit(set(c["matcher"].split("|")) != {"Bash", "Monitor", "PowerShell"})' \
+  || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not match every tool that runs a shell command: Bash, Monitor, PowerShell"; }
+python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]["hooks"][0]; sys.exit(c.get("onFailure") != "block")' \
+  || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not block when the guard fails or times out"; }
 for w in .opencode/plugin.ts .pi/plugin.ts; do
   grep -q 'path.join(scripts, "guard")' "$w" || { fail=$((fail+1)); echo "FAIL $w does not call scripts/guard"; }
 done
+python3 -c 'import json, sys; sys.exit(json.load(open("package.json"))["version"] != json.load(open(".claude-plugin/plugin.json"))["version"])' \
+  || { fail=$((fail+1)); echo "FAIL package.json and .claude-plugin/plugin.json disagree on the version"; }
+
+# An ask must still be an ask where jq is missing, since only Claude Code's
+# stdin path needs it. Run with a PATH holding only what the runner uses.
+nojq=$(mktemp -d)
+for b in bash grep tr dirname basename; do ln -s "$(command -v "$b")" "$nojq/$b"; done
+PATH="$nojq" scripts/guard "git push" 2>/dev/null | grep -q '"ask"' \
+  || { fail=$((fail+1)); echo "FAIL an ask passes silently when jq is missing"; }
+rm -rf "$nojq"
 
 echo "$pass passed, $fail failed, $known known leaks"
 [ "$fail" -eq 0 ]

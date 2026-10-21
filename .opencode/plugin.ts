@@ -8,7 +8,7 @@ import { fileURLToPath } from "url"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const scripts = path.join(repoRoot, "scripts")
-const guards = [path.join(scripts, "guard")]
+const guard = path.join(scripts, "guard")
 
 export const AgentGuardrails: Plugin = async ({ $ }) => {
   return {
@@ -21,18 +21,16 @@ export const AgentGuardrails: Plugin = async ({ $ }) => {
       const command = String(output.args?.command ?? "")
       if (!command) return
 
-      for (const guard of guards) {
-        const result = await $`${guard} ${command}`.quiet().nothrow()
-        if (result.exitCode !== 0) {
-          throw new Error(result.stderr.toString().trim() || `BLOCKED: '${command}'`)
-        }
-        const stdout = result.stdout.toString()
-        if (stdout.includes('"ask"')) {
-          const reason = JSON.parse(stdout).hookSpecificOutput?.permissionDecisionReason
-          throw new Error(
-            `NEEDS CONFIRMATION: ${reason} Run it yourself, or ask the user to confirm.`,
-          )
-        }
+      const result = await $`${guard} ${command}`.quiet().nothrow()
+      if (result.exitCode !== 0) {
+        throw new Error(result.stderr.toString().trim() || `BLOCKED: '${command}'`)
+      }
+      const stdout = result.stdout.toString()
+      if (stdout.includes('"ask"')) {
+        const reason = JSON.parse(stdout).hookSpecificOutput?.permissionDecisionReason
+        throw new Error(
+          `NEEDS CONFIRMATION: ${reason} Run it yourself, or ask the user to confirm.`,
+        )
       }
     },
   }
