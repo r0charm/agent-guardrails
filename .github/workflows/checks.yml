@@ -4,10 +4,27 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    # macOS runs the guards under its system bash 3.2, which is what
+    # `/usr/bin/env bash` finds on a Mac without Homebrew bash first on PATH.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Guard suite
         run: scripts/test
+      - name: shellcheck
+        if: runner.os == 'Linux'
+        # rules files are sourced, so the variables they set look unused.
+        run: |
+          shellcheck scripts/guard scripts/test
+          shellcheck -s bash -e SC2034 guards/*/rules
