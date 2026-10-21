@@ -46,6 +46,7 @@ done < <(lines guards/known-leaks)
 [ -x scripts/guard ] || { fail=$((fail+1)); echo "FAIL scripts/guard is not executable"; }
 python3 -c 'import json; json.load(open("hooks/hooks.json"))' \
   || { fail=$((fail+1)); echo "FAIL hooks/hooks.json is not valid JSON"; }
+# shellcheck disable=SC2016 # the placeholder is meant literally
 python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]["hooks"][0]["command"]; sys.exit(c != "\"${CLAUDE_PLUGIN_ROOT}/scripts/guard\"")' \
   || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not call \"\${CLAUDE_PLUGIN_ROOT}/scripts/guard\", quoted"; }
 python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]; sys.exit(set(c["matcher"].split("|")) != {"Bash", "Monitor", "PowerShell"})' \
@@ -57,6 +58,8 @@ for w in .opencode/plugin.ts .pi/plugin.ts; do
 done
 python3 -c 'import json, sys; sys.exit(json.load(open("package.json"))["version"] != json.load(open(".claude-plugin/plugin.json"))["version"])' \
   || { fail=$((fail+1)); echo "FAIL package.json and .claude-plugin/plugin.json disagree on the version"; }
+python3 -c 'import json, sys; m = json.load(open(".claude-plugin/marketplace.json")); sys.exit(m["plugins"][0]["source"] != "./" or "version" in m["plugins"][0])' \
+  || { fail=$((fail+1)); echo "FAIL .claude-plugin/marketplace.json does not list this repo, or pins a version plugin.json would override"; }
 
 # An ask must still be an ask where jq is missing, since only Claude Code's
 # stdin path needs it. Run with a PATH holding only what the runner uses.

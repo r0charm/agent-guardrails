@@ -11,10 +11,17 @@ Command guards for coding agents. Bash guards that deny or ask on destructive co
 ### Claude Code
 
 ```bash
+claude plugin marketplace add r0charm/agent-guardrails
+claude plugin install agent-guardrails@agent-guardrails
+```
+
+Or, from a clone you edit, load it in place:
+
+```bash
 ln -s "$PWD" ~/.claude/skills/agent-guardrails
 ```
 
-Loads this repo as a plugin; `hooks/hooks.json` wires the guards. Confirm with `claude plugin details agent-guardrails`.
+Either way `hooks/hooks.json` wires the guards. Confirm with `claude plugin details agent-guardrails`. Without plugins at all, see `setup.md`.
 
 ### opencode
 

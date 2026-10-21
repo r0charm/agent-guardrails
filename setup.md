@@ -6,6 +6,27 @@ Deterministic limits on what an agent does without asking.
 
 Nothing to wire. Claude Code carries them with the plugin through `hooks/hooks.json`, opencode through `.opencode/plugin.ts`, and Pi through `.pi/plugin.ts` once `pi install` adds this repo as a package, so the root `README.md` install step is the whole setup.
 
+### Claude Code without the plugin
+
+Where plugins are off, or managed settings allow only managed hooks, wire the runner into a settings file yourself: `~/.claude/settings.json` for every project, `.claude/settings.json` for one. Point it at your clone and merge into any `hooks.PreToolUse` already there:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Monitor|PowerShell",
+        "hooks": [
+          { "type": "command", "command": "\"$HOME/src/agent-guardrails/scripts/guard\"", "onFailure": "block" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The matcher names every tool that runs a shell command; `Bash` alone misses the other two. `onFailure` blocks the call when the guard crashes or times out, instead of letting it through. The plugin's `hooks/hooks.json` is the same entry, and `scripts/test` checks it.
+
 **Verify they fire before trusting them.** A guard that was never wired is worse than none:
 
 ```bash
