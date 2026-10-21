@@ -1,0 +1,12 @@
+{
+  "name": "agent-guardrails",
+  "description": "Command guards for coding agents.",
+  "owner": { "name": "Ricardo Rocha" },
+  "plugins": [
+    {
+      "name": "agent-guardrails",
+      "source": "./",
+      "description": "Command guards for coding agents: deny or ask on destructive commands before they run."
+    }
+  ]
+}
