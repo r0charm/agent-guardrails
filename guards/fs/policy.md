@@ -4,6 +4,14 @@
 uncommitted work in every worktree with it and nothing recovers it. This guard
 closes that.
 
+## Denied
+
+| Command | Why |
+|---|---|
+| `rm -<flags> ... /`, `/*`, `~`, `~/*`, `$HOME` | Deletes the whole filesystem or home directory. `rm` refuses a bare `/` by default and nothing else on the list, and no agent task needs any of them. A path under them, `/tmp/build` or `~/.cache/x`, stays silent. |
+
+## Asked
+
 | Command | Why it needs a human |
 |---|---|
 | `rm ... worktree...` | Removes a git worktree by path; uncommitted work in it is gone, and git cannot recover it. |

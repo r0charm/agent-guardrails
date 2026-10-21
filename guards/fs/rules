@@ -3,6 +3,13 @@
 # rm matches no other guard, so `rm -rf .claude/worktrees` slips past every
 # check and takes uncommitted work in every worktree with it. This closes that.
 
+DENY=(
+  # The filesystem root or the home directory, whole or every entry in it. rm
+  # refuses a bare `/` by default and nothing else here: `/*`, `~` and `$HOME`
+  # go through. Quotes are already stripped, so `"$HOME"` reads as `$HOME`.
+  $'(^|[^[:alnum:]_-])rm +(-[^ ]+ +)+([^ ]+ +)*(/|~|\\$HOME|\\$\\{HOME\\})/?\\*?( |;|&|\\||\\)|$)\tdeletes the whole filesystem or home directory, which nothing restores'
+)
+
 ASK=(
   $'(^|[^[:alnum:]_-])rm +.*worktree\tremoves a git worktree by path; any uncommitted work in it is gone and git cannot recover it'
   # Flags in any form, short or long, split or together: `-rf`, `-r -f`,
