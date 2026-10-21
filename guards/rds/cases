@@ -4,6 +4,7 @@
 
 # denied: the database
 DENY aws rds delete-db-instance --db-instance-identifier d
+DENY bash -c "aws rds delete-db-cluster"
 DENY aws rds delete-db-cluster --db-cluster-identifier c --skip-final-snapshot
 # denied: the recovery net
 DENY aws rds delete-db-snapshot --db-snapshot-identifier s

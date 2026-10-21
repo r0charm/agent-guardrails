@@ -5,6 +5,7 @@
 # denied
 DENY aws s3 rb s3://b
 DENY aws s3 rb s3://b --force
+DENY bash -c 'aws s3 rb'
 DENY aws s3api delete-bucket --bucket b
 DENY aws s3api put-bucket-versioning --bucket b --versioning-configuration Status=Suspended
 # the ones that do not read as destructive

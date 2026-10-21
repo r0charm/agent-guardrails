@@ -18,7 +18,7 @@ ASK=(
   "${C}eval +\\\$[A-Za-z_{]"$'\tevaluates a variable as a command, which the guards cannot read'
   "${C}\\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?${E}"$'\truns a command named by a variable, which the guards cannot read'
   "${C}\\\$\\([^)]*\\)${E}"$'\truns a command produced by a substitution, which the guards cannot read'
-  "${C}(git|kubectl|helm|terraform|aws) +\\\$"$'\tgives a guarded tool its subcommand from a variable, so the guard for it cannot read the verb'
+  "${C}(git|gh|kubectl|helm|terraform|tofu|terragrunt|aws) +\\\$"$'\tgives a guarded tool its subcommand from a variable, so the guard for it cannot read the verb'
 )
 
 # Commands this guard looks at at all, so it stays out of the others' way.

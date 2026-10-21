@@ -13,6 +13,9 @@ ASK $(echo git) push
 ASK eval "$CMD"
 ASK x=push; git $x
 ASK kubectl $verb ns prod
+ASK gh $(echo repo delete) x
+ASK tofu $X
+ASK terragrunt $X
 # pipes, variables and substitutions that name what they run
 PASS eval "$(ssh-agent -s)"
 PASS cat a.json | python3 -m json.tool

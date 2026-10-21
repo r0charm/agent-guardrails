@@ -48,6 +48,8 @@ PASS git diff HEAD
 PASS git fetch origin
 # global options before the verb, and chains
 ASK git -C repo push
+ASK git --git-dir /x push
+ASK git --work-tree /x --git-dir /x/.git reset --hard
 ASK cd x && git push origin main
 ASK git --no-pager reset --hard HEAD~1
 ASK git push -f origin feat

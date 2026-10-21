@@ -4,6 +4,8 @@
 
 # denied
 DENY kubectl delete namespace prod
+DENY kubectl delete ns/prod
+DENY kubectl delete namespaces prod
 DENY kubectl delete pvc d
 DENY kubectl delete -n ns pvc d
 DENY kubectl delete crd w.example.com
