@@ -2,7 +2,7 @@
 
 [![checks](https://github.com/r0charm/agent-guardrails/actions/workflows/checks.yml/badge.svg)](https://github.com/r0charm/agent-guardrails/actions/workflows/checks.yml) [![version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fr0charm%2Fagent-guardrails%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version)](https://github.com/r0charm/agent-guardrails/blob/main/.claude-plugin/plugin.json) [![license](https://img.shields.io/github/license/r0charm/agent-guardrails)](https://github.com/r0charm/agent-guardrails/blob/main/LICENSE)
 
-Command guards for coding agents. Bash guards that deny or ask on destructive commands before they run, wired into the coding agent harnesses that run them. Standalone: no skills, no other dependency.
+Command guards for coding agents. Bash guards that deny or ask on destructive commands before they run, wired into the coding agent harnesses that run them. Standalone: needs only bash, and jq for Claude Code.
 
 > **A safety net, not a security boundary.** Each guard decides from the command text alone, so a determined or creative command can slip past a pattern. Real protection is credential scope (a read-only cloud profile, a kubeconfig without prod) and isolation (containers, worktrees, sandboxes). These guards catch the mistakes those let through. Layering is in [`setup.md`](setup.md).
 
@@ -38,7 +38,7 @@ pi install "$PWD"
 
 ## Behaviour
 
-Three outcomes per command: **deny** (exit 2, cannot be lifted in session), **ask** (a confirmation, which auto mode does not skip), or silent (falls through to your permission rules). Guards never allow.
+Three outcomes per command: **deny** (exit 2, cannot be lifted in session), **ask** (a prompt auto mode does not skip in Claude Code, a dialog in Pi, a refusal naming the reason in opencode, which plugins cannot prompt from), or silent (falls through to your permission rules). Guards never allow.
 
 Destructive or irreversible commands deny or ask; reads stay silent, so a confirmation keeps its meaning. Verbs are anchored, so a match on a word inside an argument does not fire.
 
@@ -47,5 +47,5 @@ Destructive or irreversible commands deny or ask; reads stay silent, so a confir
 ## Test
 
 ```bash
-scripts/test
+scripts/test   # Node 22+ also loads the opencode and Pi wiring
 ```

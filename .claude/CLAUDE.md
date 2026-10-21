@@ -13,5 +13,5 @@ Bash guards that deny or ask on destructive commands. Each guard is a folder in 
 - A guard decides from the command alone. Never make a rule depend on knowing your infrastructure.
 - Keep `deny` small: a denied command can only be authorised by editing the guard.
 - Commits are the repo owner's. Author them as `Ricardo Rocha <7465674+r0charm@users.noreply.github.com>` alone: no `Co-Authored-By`, no agent or model named, in commits, PR titles, descriptions or comments. Check `git config user.name` and `user.email` before the first commit of a session; a hosted session starts with the harness identity, so set the owner's repo-locally if it differs.
-- CI runs `scripts/test` on every push, on Linux and on macOS's bash 3.2, plus shellcheck. `scripts/plugins.test.mjs` loads the opencode and Pi wiring with a stand-in harness; it needs Node 22 or later.
+- `scripts/test` covers the rules and the wiring; it loads the opencode and Pi plugins through `scripts/plugins.test.mjs`, which needs Node 22+. CI runs it on Linux and macOS's bash 3.2, plus shellcheck.
 - A release bumps `version` in `.claude-plugin/plugin.json` and `package.json` together. Marketplace installs stay on their cached copy until that string changes, however many commits land.
