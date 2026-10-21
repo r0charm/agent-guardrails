@@ -21,7 +21,7 @@ T=$'\t'
 SKIP='(^| )can-i( |$)'
 
 DENY=(
-  "${S}delete +(namespace|ns) ${T}takes every workload, secret and volume in the namespace with it"
+  "${S}delete +(namespaces?|ns)[ /]${T}takes every workload, secret and volume in the namespace with it"
   "${S}delete +([^ ]+ +)*(pvc|persistentvolumeclaim|pv|persistentvolume)${ES}${T}deletes storage, and the data on it"
   "${S}delete +([^ ]+ +)*(crd|customresourcedefinition)s?${E}${T}deletes every custom resource of that kind across the cluster"
   "${S}delete +.*--all${E}${T}a bulk delete whose blast radius is not visible in the command"

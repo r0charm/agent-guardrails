@@ -3,9 +3,10 @@
 CASE_SENSITIVE=1
 
 # Every verb is anchored to the subcommand position: `git`, then any global
-# options (`-C dir`, `-c key=val`, `--no-pager`), then the verb. Unanchored,
-# `push` fires on `git stash push` and `rebase` on a commit message naming it.
-G='(^|[^[:alnum:]_-])git( +-[Cc] +[^ ]+| +--[a-z-]+(=[^ ]+)?)* +'
+# options (`-C dir`, `-c key=val`, `--git-dir dir`, `--no-pager`), then the
+# verb. Unanchored, `push` fires on `git stash push` and `rebase` on a commit
+# message naming it.
+G='(^|[^[:alnum:]_-])git( +-[Cc] +[^ ]+| +--(git-dir|work-tree|namespace|config-env) +[^ ]+| +--[a-z-]+(=[^ ]+)?)* +'
 # The end of a verb or flag: a space, a quote, a shell separator or the end.
 # A bare space missed `git push;` and `bash -c 'git push'`.
 E="([ '\";&|)]|\$)"

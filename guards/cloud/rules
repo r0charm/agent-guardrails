@@ -27,4 +27,4 @@ ASK=(
 )
 
 # Commands this guard looks at at all, so it stays out of the others' way.
-SCOPE='(^|[^[:alnum:]_-])(aws|docker)([^[:alnum:]_-]|$)'
+SCOPE='(^|[^[:alnum:]_-])aws([^[:alnum:]_-]|$)'
