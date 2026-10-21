@@ -16,7 +16,7 @@ Credentials: the stores that hand them out, and the files that hold them. A secr
 | `ssm get-parameter(s) ... --with-decryption` | Prints the decrypted value. |
 | `kms decrypt` | Prints plaintext. |
 | `aws configure get <secret or key>`, `aws configure export-credentials` | Prints AWS credentials. |
-| `cat`, `grep`, `cp`, `curl` and the like on a credential file | `~/.aws/credentials`, private keys in `~/.ssh`, `.netrc`, `.git-credentials`, `.npmrc`, `.pgpass`, `~/.docker/config.json`, `.env` and its environment variants. |
+| `cat`, `grep`, `cp`, `curl` and the like on a credential file | `~/.aws/credentials`, private keys in `~/.ssh`, `.netrc`, `.git-credentials`, `.npmrc`, `.pgpass`, `~/.docker/config.json`, `~/.kube/config`, `~/.config/gh/hosts.yml`, gcloud's credential files, `.env` and its environment variants. |
 
 ## Asked: changes to what everything else authenticates with
 

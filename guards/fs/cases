@@ -2,6 +2,16 @@
 # command is the rest of the line, verbatim. Run by scripts/test against this
 # guard alone.
 
+# denied: the root or the home directory
+DENY rm -rf /
+DENY rm -rf /*
+DENY rm -rf ~
+DENY rm -rf ~/
+DENY rm -rf ~/*
+DENY rm -rf "$HOME"
+DENY rm -rf ${HOME}/*
+DENY sudo rm -rf --no-preserve-root /
+DENY cd x && rm -rf ~;
 # deletes git cannot recover
 ASK rm -rf .claude/worktrees
 ASK rm -rf ../app-worktree-feat
@@ -19,5 +29,9 @@ PASS rm -f .git/index.lock
 PASS rm -rf .github/workflows/old.yml
 PASS rm -f .gitignore
 PASS rm -rf node_modules
+PASS rm -rf /tmp/build
+PASS rm -rf ~/tmp/x
+PASS rm -rf "$HOME/.cache/x"
+PASS rm -rf ./*
 PASS rm build/app.js
 PASS confirm worktree

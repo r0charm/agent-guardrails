@@ -19,6 +19,8 @@ ASK kubectl proxy
 ASK kubectl cp a p:/b
 # secret reads and state changes
 ASK kubectl get secret s -o yaml
+ASK kubectl config view --raw
+ASK kubectl config view --minify --raw
 ASK kubectl --context c delete deploy/a
 ASK kubectl apply -f x
 ASK kubectl scale deploy/a --replicas=0
@@ -38,3 +40,5 @@ PASS kubectl get events --field-selector reason=Created
 PASS kubectl logs deploy/scaler
 PASS kubectl describe deploy/label-printer
 PASS kubectl get secret s
+PASS kubectl config view
+PASS kubectl config view --minify

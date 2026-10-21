@@ -41,6 +41,8 @@ ASK=(
   # A read whose output is a credential. Syntactically identical to any other
   # get; the value is in the transcript from then on.
   "${S}get +([^ ]+ +)*secrets?${ES}.*(-o|--output)${T}prints secret values, which then sit in the session transcript"
+  # Without --raw, config view redacts the credentials.
+  "${S}config +view( .*)? --raw${E}${T}prints the kubeconfig with its credentials into the session transcript"
 
   # State changes.
   "${S}(apply|create|delete|patch|replace|edit|scale|annotate|label|taint|drain|cordon|uncordon)${E}${T}changes cluster state"

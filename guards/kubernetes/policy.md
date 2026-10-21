@@ -6,7 +6,7 @@ Names no cluster and detects no environment. See the reasoning in `../setup.md`.
 
 | Command | Why |
 |---|---|
-| `delete namespace` / `delete ns` | Takes every workload, secret and volume in it. |
+| `delete namespace` / `delete ns`, `ns/<name>` | Takes every workload, secret and volume in it. |
 | `delete pvc`, `delete pv` | Deletes storage, and the data on it. |
 | `delete crd` | Deletes every custom resource of that kind, cluster-wide. |
 | `delete --all` | A bulk delete whose blast radius is not visible in the command. |
@@ -26,7 +26,7 @@ The tier most lists miss. These change nothing themselves. They hand over the me
 
 ## Asked: reads that yield secrets
 
-`kubectl get secret -o yaml` is syntactically identical to `kubectl get pods` and prints credentials into a transcript that keeps them. Carved out of the read allowance for that reason.
+`kubectl get secret -o yaml` is syntactically identical to `kubectl get pods` and prints credentials into a transcript that keeps them. Carved out of the read allowance for that reason. `kubectl config view --raw` asks for the same reason; without `--raw` it redacts.
 
 ## Asked: state changes
 
