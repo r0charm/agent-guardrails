@@ -4,7 +4,7 @@ Deterministic limits on what an agent does without asking.
 
 ## Install
 
-Nothing to wire. Claude Code carries them with the plugin through `hooks/hooks.json`, opencode through `.opencode/plugin.ts`, and Pi through `.pi/plugin.ts` once `pi install` adds this repo as a package, so the root `README.md` install step is the whole setup.
+Nothing to wire. Claude Code carries them with the plugin through `hooks/hooks.json` and opencode through `.opencode/plugin.ts`, so the root `README.md` install step is the whole setup.
 
 ### Claude Code without the plugin
 

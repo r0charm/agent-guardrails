@@ -360,7 +360,7 @@ if [ "$depth" -gt 0 ]; then
   exit 0
 fi
 
-# Written without jq: opencode and Pi pass the command as arguments and never
+# Written without jq: opencode passes the command as arguments and never
 # reach the jq check above, so an ask built with jq would fail to print and
 # exit 0, passing the command. Reasons are one line; only `\` and `"` need
 # escaping.
