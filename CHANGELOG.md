@@ -1,10 +1,4 @@
-# Changelog
-
-Each release bumps `version` in `.claude-plugin/plugin.json` and `package.json` together; marketplace installs update only when it changes. Versions follow [SemVer](https://semver.org), read for a tool whose output is decisions:
-
-- **Major**: a change that breaks an install or the wiring: the marketplace or plugin name, the hook contract, a harness dropped.
-- **Minor**: a change that can add decisions: a guard or rule added, a rule moved from ask to deny, a new spelling or file read.
-- **Patch**: a change that only removes wrong decisions: a false positive gone, a rule moved from deny to ask.
+# @rocharm/agent-guardrails
 
 ## 1.2.0
 

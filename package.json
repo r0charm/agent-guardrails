@@ -1,8 +1,7 @@
 {
-  "name": "agent-guardrails",
+  "name": "@rocharm/agent-guardrails",
   "version": "1.2.0",
-  "private": true,
-  "description": "Command guards for coding agents (Claude Code, opencode).",
+  "description": "Command guards for coding agents: deny or ask on destructive commands before they run.",
   "author": "Ricardo Rocha",
   "license": "MIT",
   "homepage": "https://github.com/r0charm/agent-guardrails",
@@ -13,6 +12,33 @@
   "keywords": [
     "claude-code",
     "opencode",
-    "guardrails"
-  ]
+    "opencode-plugin",
+    "guardrails",
+    "hooks"
+  ],
+  "type": "module",
+  "main": ".opencode/plugin.ts",
+  "files": [
+    ".opencode/plugin.ts",
+    "scripts/guard",
+    "guards"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "scripts/test",
+    "changeset": "changeset",
+    "version": "changeset version && node scripts/sync-plugin-version.mjs",
+    "check-plugin-version": "node scripts/sync-plugin-version.mjs --check",
+    "release": "changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.30.0"
+  },
+  "packageManager": "npm@10.9.4"
 }

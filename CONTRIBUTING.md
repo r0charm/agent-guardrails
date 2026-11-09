@@ -27,4 +27,10 @@ Nothing outside the folder names a guard, so dropping one is deleting its folder
 
 ## Releases
 
-See [CHANGELOG.md](CHANGELOG.md) for the versioning policy.
+A pull request that changes a decision or the install adds a changeset: `npx changeset`, pick the bump, write one line for users. On `main`, the release workflow gathers them into a "Version packages" pull request; merging it bumps `package.json`, copies the version into `.claude-plugin/plugin.json`, writes [CHANGELOG.md](CHANGELOG.md), publishes to npm and tags the release. Claude Code installs update when `plugin.json`'s version changes, opencode installs when npm's does.
+
+Versions follow [SemVer](https://semver.org), read for a tool whose output is decisions:
+
+- **Major**: a change that breaks an install or the wiring: the plugin or package name, the hook contract, a harness dropped.
+- **Minor**: a change that can add decisions: a guard or rule added, a rule moved from ask to deny, a new spelling or file read.
+- **Patch**: a change that only removes wrong decisions: a false positive gone, a rule moved from deny to ask.

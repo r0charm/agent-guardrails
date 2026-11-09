@@ -1,0 +1,54 @@
+name: Wrong decision
+description: A guard asked or denied a safe command, or let a destructive one through. One command per issue.
+labels: [bug, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Put the command first. `scripts/guard "<command>"` in a clone shows the decision without a harness.
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      description: The exact command, as the agent ran it.
+      placeholder: kubectl delete pods -l app=delete-me
+    validations:
+      required: true
+  - type: dropdown
+    id: got
+    attributes:
+      label: What the guard did
+      options: [Denied, Asked, Nothing]
+    validations:
+      required: true
+  - type: dropdown
+    id: expected
+    attributes:
+      label: What it should have done
+      options: [Deny, Ask, Nothing]
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What the command does, and why the other decision is right.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version and harness
+      description: The plugin version, and Claude Code or opencode with its version.
+      placeholder: 1.3.0, Claude Code 2.3.1
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The command is not already in `guards/known-leaks`.
+          required: true
+        - label: I searched open and closed issues for a duplicate.
+          required: true

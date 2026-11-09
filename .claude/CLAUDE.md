@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-Bash guards that deny or ask on destructive commands. Each guard is a folder in `guards/`: `rules`, `cases` and `policy.md`. `scripts/guard` runs them all and returns one decision; it is the only thing the wiring calls: Claude Code (`hooks/hooks.json`) and opencode (`.opencode/plugin.ts`). Standalone. Tiers and rationale in `setup.md`.
+Bash guards that deny or ask on destructive commands. Each guard is a folder in `guards/`: `rules`, `cases` and `policy.md`. `scripts/guard` runs them all and returns one decision; it is the only thing the wiring calls: Claude Code (`hooks/hooks.json`) and opencode (`.opencode/plugin.ts`, published to npm as `@rocharm/agent-guardrails`). The Claude Code marketplace is not here: it is `r0charm/plugins`, which lists every r0charm plugin. Standalone. Tiers and rationale in `setup.md`.
 
 ## Editing here
 
@@ -14,4 +14,4 @@ Bash guards that deny or ask on destructive commands. Each guard is a folder in 
 - Keep `deny` small: a denied command can only be authorised by editing the guard.
 - Commits are the repo owner's. Author them as `Ricardo Rocha <7465674+r0charm@users.noreply.github.com>` alone: no `Co-Authored-By`, no agent or model named, in commits, PR titles, descriptions or comments. Check `git config user.name` and `user.email` before the first commit of a session; a hosted session starts with the harness identity, so set the owner's repo-locally if it differs.
 - `scripts/test` covers the rules and the wiring; it loads the opencode plugin through `scripts/plugins.test.mjs`, which needs Node 22+. CI runs it on Linux and macOS's bash 3.2, plus shellcheck.
-- A release bumps `version` in `.claude-plugin/plugin.json` and `package.json` together. Marketplace installs stay on their cached copy until that string changes, however many commits land.
+- A change to a decision or the install adds a changeset (`npx changeset`), bumped by the policy in `CONTRIBUTING.md`. Never edit `version` by hand: the release workflow's "Version packages" pull request bumps `package.json` and `scripts/sync-plugin-version.mjs` copies it into `.claude-plugin/plugin.json`. Installs stay on their cached copy until that string changes, however many commits land.

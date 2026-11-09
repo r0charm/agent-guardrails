@@ -1,45 +1,58 @@
 # agent-guardrails
 
-[![version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fr0charm%2Fagent-guardrails%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version)](.claude-plugin/plugin.json) [![license](https://img.shields.io/github/license/r0charm/agent-guardrails)](LICENSE)
+[![version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fr0charm%2Fagent-guardrails%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version)](CHANGELOG.md) [![npm](https://img.shields.io/npm/v/@rocharm/agent-guardrails)](https://www.npmjs.com/package/@rocharm/agent-guardrails) [![license](https://img.shields.io/github/license/r0charm/agent-guardrails)](LICENSE)
 
 Stop a coding agent before it runs a command that cannot be undone: a force push, a deleted namespace, a dropped table, `rm -rf` on the wrong path.
-
-```
-/plugin marketplace add r0charm/agent-guardrails
-/plugin install agent-guardrails@r0charm
-```
 
 - **Deny or ask**: the irreversible is denied, the risky asks a human, everything else runs as before. Guards never allow.
 - **Reads what runs**: the command as the shell will see it, and the scripts, `make` targets and `npm` scripts it runs.
 - **Zero setup**: bash only, plus `jq` for Claude Code. Nothing is installed in your repos.
 - **For mistakes, not attacks**: a safety net under credential scope and isolation, not a replacement for them. See [What it does not stop](#what-it-does-not-stop).
 
-## Requirements
+## Installation
 
-- Claude Code or opencode
-- bash 3.2+ (macOS's default works)
-- `jq`, for Claude Code
+Requires bash 3.2+ (macOS's default works), and `jq` for Claude Code. Pick one per agent.
 
-## Install
+<details>
+<summary><strong>Claude Code</strong></summary>
 
-### Claude Code
-
-```
-/plugin marketplace add r0charm/agent-guardrails
-/plugin install agent-guardrails@r0charm
+```bash
+claude plugin marketplace add r0charm/plugins
+claude plugin install agent-guardrails@r0charm
 ```
 
-Restart the session. `claude plugin details agent-guardrails` shows it loaded. Without plugins, wire the hook by hand: [`setup.md`](setup.md).
+Or in a session: `/plugin marketplace add r0charm/plugins`, then `/plugin install agent-guardrails@r0charm`. Restart the session; `claude plugin details agent-guardrails` shows it loaded.
 
-### opencode
+Update with `claude plugin marketplace update r0charm`, then `claude plugin update agent-guardrails@r0charm`.
+
+</details>
+
+<details>
+<summary><strong>opencode</strong></summary>
+
+Add it to `opencode.json`, globally (`~/.config/opencode/opencode.json`) or per project:
+
+```json
+{ "plugin": ["@rocharm/agent-guardrails"] }
+```
+
+opencode installs it from npm at startup. Pin a version (`@rocharm/agent-guardrails@2.0.0`) to control updates.
+
+</details>
+
+<details>
+<summary><strong>From a clone</strong> (to edit the rules)</summary>
 
 ```bash
 git clone https://github.com/r0charm/agent-guardrails <clone>
-mkdir -p ~/.config/opencode/plugins
-ln -s <clone>/.opencode/plugin.ts ~/.config/opencode/plugins/agent-guardrails.ts
 ```
 
-A `git pull` in `<clone>` updates it.
+- Claude Code: `claude --plugin-dir <clone>`, or wire the hook by hand as in [`setup.md`](setup.md).
+- opencode: `ln -s <clone>/.opencode/plugin.ts ~/.config/opencode/plugins/agent-guardrails.ts`
+
+A `git pull` updates it.
+
+</details>
 
 ## Output
 
@@ -81,7 +94,7 @@ ASK=(  "<pattern><TAB>why it needs a human" )
 
 Then set the outcome in that folder's `cases` and run `scripts/test`. `scripts/guard "<command>"` shows the decision for one command.
 
-Edit a clone, not the installed copy: a marketplace update overwrites the cache. Load the clone with `claude --plugin-dir <clone>`, or wire it by hand as in [`setup.md`](setup.md). Details in [CONTRIBUTING.md](CONTRIBUTING.md).
+Edit a clone, not the installed copy, which an update overwrites: see [From a clone](#installation). Details in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## What it checks
 
@@ -103,7 +116,7 @@ Each known gap is a case in [`guards/known-leaks`](guards/known-leaks), so closi
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: [SECURITY.md](SECURITY.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [SCOPE.md](SCOPE.md). Security issues: [SECURITY.md](SECURITY.md).
 
 ## License
 
