@@ -88,3 +88,8 @@ ASK {git,push,--force}
 DENY git${IFS}reflog${IFS}expire --all
 PASS git status ${IFS}
 PASS git log -- {a,b}.ts
+# an argv list, as an interpreter hands it to exec
+ASK python3 -c "import subprocess; subprocess.run(['git','push'])"
+ASK python3 -c "import subprocess; subprocess.run(['git', 'push', '--force'])"
+ASK perl -e 'system("git","push")'
+PASS python3 -c "print(['git', 'status'])"

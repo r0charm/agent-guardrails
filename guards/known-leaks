@@ -8,9 +8,6 @@ bash deploy.sh
 make release
 npm run deploy
 mongosh --file wipe.js
-# argv as a list: the words never sit next to each other.
-python3 -c "import subprocess; subprocess.run(['git','push'])"
-perl -e 'system("git","push")'
 # Another client for a guarded resource.
 oc delete project prod
 k delete ns prod

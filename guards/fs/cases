@@ -39,3 +39,6 @@ PASS confirm worktree
 DENY rm${IFS}-rf /
 DENY r${x}m -rf /
 PASS ls {a,b}
+# an argv list, as an interpreter hands it to exec
+DENY python3 -c "os.execvp('rm', ['rm','-rf','/'])"
+PASS jq '[.a, .b]' f
