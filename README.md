@@ -61,6 +61,28 @@ s3: deletes at the destination whatever is missing from the source, so the wrong
 
 A read stays silent and falls through to your permission rules.
 
+## Change a decision
+
+Two levels exist, deny and ask. Guards never allow: to let a command through, remove the rule, and your permission rules decide. A Claude Code `allow` rule does not lift a guard's ask, and nothing in the session lifts a deny.
+
+Each rule is a line in `guards/<system>/rules`, a pattern and its reason:
+
+```bash
+DENY=( "<pattern><TAB>why it never runs" )
+ASK=(  "<pattern><TAB>why it needs a human" )
+```
+
+| To | Do |
+| --- | --- |
+| Make an ask a deny, or back | Move its line between `ASK=(` and `DENY=(` |
+| Let a command through | Delete its line, or add a `SKIP` regex for the exception |
+| Guard a new command | Add a line, verb anchored |
+| Drop a whole system | Delete `guards/<system>/` |
+
+Then set the outcome in that folder's `cases` and run `scripts/test`. `scripts/guard "<command>"` shows the decision for one command.
+
+Edit a clone, not the installed copy: a marketplace update overwrites the cache. Load the clone with `claude --plugin-dir <clone>`, or wire it by hand as in [`setup.md`](setup.md). Details in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## What it checks
 
 - **Systems**: version control and its hosting CLI, Kubernetes, infrastructure as code, cloud control planes, managed databases, object storage, secrets stores and the filesystem. One folder per system in [`guards/`](guards), each with its `policy.md`.
