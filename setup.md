@@ -86,7 +86,7 @@ A kubeconfig without the prod context cannot have the gap a pattern can. Treat w
 
 ## The rules that shape the lists
 
-**A guard decides from the command alone.** If a decision needs to know something about your infrastructure, the rule is wrong: make it coarser until it is decidable syntactically. Detecting which cluster is production was tried and removed for this reason. It existed only to avoid asking in non-prod, which is convenience, and every branch of it was a way to fail. A guard that can fail to recognise production is worse than one that asks every time.
+**A guard decides from the command and the files it runs.** The runner reads a script, make target or package.json script the command runs and hands its text to every guard, so a guard never reads a file itself. If a decision needs to know something about your infrastructure, the rule is wrong: make it coarser until it is decidable syntactically. Detecting which cluster is production was tried and removed for this reason. It existed only to avoid asking in non-prod, which is convenience, and every branch of it was a way to fail. A guard that can fail to recognise production is worse than one that asks every time.
 
 **Anything phrased as a prohibition belongs here, not in a skill.** A skill describes what exists. A "never do X" in a skill is a rule nobody enforces and that may not even load.
 

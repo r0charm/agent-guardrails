@@ -3,11 +3,10 @@
 # fails the suite and the case moves to the cases of the guard that now catches
 # it. Why each class is out of reach is in guards/shell/policy.md.
 
-# The command lives in a file, which a guard deciding from text cannot read.
-bash deploy.sh
-make release
-npm run deploy
-mongosh --file wipe.js
+# A file named through an expansion, or run by a tool whose files are not read.
+bash $DIR/deploy.sh
+just release
+task deploy
 # Another client for a guarded resource.
 oc delete project prod
 k delete ns prod
