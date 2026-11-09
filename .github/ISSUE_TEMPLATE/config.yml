@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/r0charm/agent-guardrails/security/advisories/new
+    about: Report it privately. See SECURITY.md for what counts.
+  - name: Is my request in scope?
+    url: https://github.com/r0charm/agent-guardrails/blob/main/SCOPE.md
+    about: What the guards decide, and what they have already ruled out.

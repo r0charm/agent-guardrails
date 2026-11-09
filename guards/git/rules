@@ -1,0 +1,48 @@
+# Guards git. See policy.md.
+
+CASE_SENSITIVE=1
+
+# Every verb is anchored to the subcommand position: `git`, then any global
+# options (`-C dir`, `-c key=val`, `--git-dir dir`, `--no-pager`), then the
+# verb. Unanchored, `push` fires on `git stash push` and `rebase` on a commit
+# message naming it.
+G='(^|[^[:alnum:]_-])git( +-[Cc] +[^ ]+| +--(git-dir|work-tree|namespace|config-env) +[^ ]+| +--[a-z-]+(=[^ ]+)?)* +'
+# The end of a verb or flag: a space, a quote, a shell separator or the end.
+# A bare space missed `git push;` and `bash -c 'git push'`.
+E="([ '\";&|)]|\$)"
+T=$'\t'
+
+DENY=(
+  # The recovery net. Everything else here is survivable while the reflog
+  # still holds the old tip; these are what remove that.
+  "${G}reflog +expire${T}deletes the reflog, which is what makes every other git mistake recoverable"
+  "${G}gc( .*)? --prune${T}prunes unreachable objects, discarding what the reflog would have recovered"
+  "${G}filter-(branch|repo)${E}${T}rewrites every commit in the repository"
+  "${G}update-ref( .*)? -d${E}${T}deletes a ref directly, bypassing the reflog"
+)
+
+ASK=(
+  "${G}push( .*)? (--force(-with-lease)?|-f)(=|[ '\";&|)]|\$)${T}force push, which discards commits on the remote"
+  "${G}push${E}${T}pushes to a remote, which is the point of no return for anything already committed"
+  "${G}send-pack${E}${T}pushes to a remote through the plumbing push uses"
+  "${G}reset( .*)? --hard${T}discards every uncommitted change in the working tree"
+  "${G}clean( .*)? (-[a-zA-Z]*f|--force)${T}deletes untracked files, which git cannot recover"
+  "${G}branch( .*)? (-D|--delete +--force|--force +--delete)${E}${T}force-deletes a branch without checking it is merged"
+  "${G}(checkout|restore) +\\.${E}${T}discards every uncommitted change in the working tree"
+  "${G}checkout( .*)? --${E}|${G}restore +[^-]${T}discards uncommitted changes in the named files"
+  "${G}(checkout|switch)( .*)? (-f|--force|--discard-changes)${E}${T}switches branch and discards every uncommitted change on the way"
+  "${G}read-tree( .*)? (-u|--reset)${E}${T}overwrites the index or working tree from a tree, discarding uncommitted changes"
+  "${G}branch( .*)? (-f|--force)${E}${T}moves an existing branch to another commit, and the commits it pointed at stop being reachable from it"
+  "${G}update-ref${E}${T}moves a ref directly, without any of the checks branch or reset would make"
+  "${G}tag( .*)? (-d|--delete)${E}${T}deletes a tag, which no reflog records"
+  "${G}rebase${E}${T}rewrites history, and loses commits when a conflict is resolved wrongly"
+  "${G}commit( .*)? --amend${T}rewrites the last commit, which is destructive once it has been pushed"
+  "${G}stash +(drop|clear)${T}discards stashed work, which nothing else references"
+  "${G}worktree +remove( .*)? (--force|-f)${E}${T}removes a worktree along with any uncommitted work in it"
+  "${G}worktree +remove${T}removes a worktree; any uncommitted work in it is gone"
+  "${G}worktree +prune${T}drops worktree bookkeeping, which can strand or remove worktrees"
+  "${G}submodule +deinit( .*)? (-f|--force)${T}discards uncommitted work inside the submodule"
+)
+
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])git([^[:alnum:]_-]|$)'
