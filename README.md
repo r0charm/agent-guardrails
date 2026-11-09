@@ -26,10 +26,6 @@ Every known gap is a test case in [`guards/known-leaks`](guards/known-leaks): th
 
 **Use instead, or underneath**: a read-only cloud profile, a kubeconfig without prod, no push rights to protected branches, deletion protection and backups on the data, and a container or sandbox with no production credentials in it. Those hold whatever the agent types.
 
-## Cost
-
-Local bash, no model calls, no tokens. About 0.1 s per shell command, a little more when it runs a file the guards read.
-
 ## Install
 
 ### Claude Code
@@ -61,15 +57,9 @@ mkdir -p ~/.config/opencode/plugins
 ln -s "$PWD/.opencode/plugin.ts" ~/.config/opencode/plugins/agent-guardrails.ts
 ```
 
-### Pi
-
-```bash
-pi install "$PWD"
-```
-
 ## Behaviour
 
-Three outcomes per command: **deny** (exit 2, cannot be lifted in session), **ask** (a prompt auto mode does not skip in Claude Code, a dialog in Pi, a refusal naming the reason in opencode, which plugins cannot prompt from), or silent (falls through to your permission rules). Guards never allow.
+Three outcomes per command: **deny** (exit 2, cannot be lifted in session), **ask** (a prompt auto mode does not skip in Claude Code, a refusal naming the reason in opencode, which plugins cannot prompt from), or silent (falls through to your permission rules). Guards never allow.
 
 Destructive or irreversible commands deny or ask; reads stay silent, so a confirmation keeps its meaning. Verbs are anchored, so a match on a word inside an argument does not fire.
 
@@ -78,5 +68,5 @@ Destructive or irreversible commands deny or ask; reads stay silent, so a confir
 ## Test
 
 ```bash
-scripts/test   # Node 22+ also loads the opencode and Pi wiring
+scripts/test   # Node 22+ also loads the opencode wiring
 ```
