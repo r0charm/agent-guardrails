@@ -65,6 +65,40 @@ fi
 seen=$(printf '%s' "$command" | tr -d "'\"\\\\" | tr '\t' ' ')
 seen="$command"$'\n'"$seen"
 
+# A third line goes further, undoing what the shell expands to nothing, a space
+# or plain words, so a pattern written for `git push` also reads
+# `git${IFS}push`, `g${x}it push`, `{git,push}` or `$'\x67it' push`. Each step
+# is a rewrite the shell itself would make, and matching only gains lines, so
+# none can silence a rule. What it cannot know, a variable's value, is dropped:
+# an unset one is how these tricks work, and dropping it asks more, not less.
+norm=${command//$'\\\n'/}
+# ANSI-C quoting: decode the escapes printf %b also knows, octal given its
+# leading 0.
+re="\\$'(([^'\\\\]|\\\\.)*)'"
+while [[ $norm =~ $re ]]; do
+  body=$(printf '%s' "${BASH_REMATCH[1]}" | sed -E 's/\\([0-7]{1,3})/\\0\1/g')
+  # Replacements quoted: bash 5.2 expands an unquoted & to the match, and the
+  # loop would never end.
+  norm=${norm/"${BASH_REMATCH[0]}"/"$(printf '%b' "$body")"}
+done
+# Backticks are the old spelling of $(...), which the guards already read.
+# Then: IFS is whitespace; a default stands in for its unset variable; every
+# other expansion of an unset name is empty.
+# shellcheck disable=SC2016 # sed expressions, meant literally
+norm=$(printf '%s' "$norm" | sed -E \
+  -e 's/`([^`]*)`/$(\1)/g' \
+  -e 's/\$\{IFS[^}]*\}|\$IFS/ /g' \
+  -e 's/\$\{[A-Za-z_][A-Za-z0-9_]*:?[-=]([^}]*)\}/\1/g' \
+  -e 's/\$\{[^}]*\}|\$[@*0-9]|\$[A-Za-z_][A-Za-z0-9_]*//g')
+# Brace expansion of a whole word: `{git,push}` runs `git push`.
+re='(^|[[:space:];&|(])\{([^{}[:space:];&|()$]*,[^{}[:space:];&|()$]*)\}([[:space:];&|)]|$)'
+while [[ $norm =~ $re ]]; do
+  words=${BASH_REMATCH[2]//,/ }
+  norm=${norm/"${BASH_REMATCH[0]}"/"${BASH_REMATCH[1]}$words${BASH_REMATCH[3]}"}
+done
+norm=$(printf '%s' "$norm" | tr -d "'\"\\\\" | tr '\t' ' ')
+seen="$seen"$'\n'"$norm"
+
 # Prints the reason of the first entry that matches, or returns 1.
 match() {
   local entry pattern flags=-qiE

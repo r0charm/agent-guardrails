@@ -41,3 +41,5 @@ PASS aws s3api get-bucket-policy --bucket b
 PASS aws s3api list-object-versions --bucket rm-logs
 PASS aws s3api get-bucket-versioning --bucket b
 PASS aws dynamodb import-table --s3-bucket-source S3Bucket=b
+# what the shell expands to a space, nothing or plain words
+DENY aws${IFS}s3 rb s3://b --force

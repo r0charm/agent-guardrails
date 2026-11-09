@@ -72,3 +72,19 @@ PASS git config --get remote.origin.pushurl
 PASS git checkout -b feat
 PASS git clean -n
 PASS git restore --staged src/a.ts
+# what the shell expands to a space, nothing or plain words
+ASK git${IFS}push
+ASK git$IFS push
+ASK git${IFS%?}push
+ASK g${x}it push
+ASK g$@it push
+ASK git pu$@sh
+ASK git p${empty:-}ush
+ASK git ${v:-push}
+ASK $'\x67it' push
+ASK git $'p\165sh'
+ASK {git,push}
+ASK {git,push,--force}
+DENY git${IFS}reflog${IFS}expire --all
+PASS git status ${IFS}
+PASS git log -- {a,b}.ts

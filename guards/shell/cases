@@ -27,3 +27,9 @@ PASS echo "$(date)"
 PASS export PATH=$PATH:/x
 PASS git -C $DIR status
 PASS git commit -m "$MSG"
+# backticks, the old spelling of $(...)
+ASK `echo git` push
+PASS echo `date`
+# an & in what the guard rewrites, which bash 5.2 would expand to the match
+PASS echo $'a&b'
+PASS echo $'\x24\x27\x26\x27'
