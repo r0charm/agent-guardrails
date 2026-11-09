@@ -4,7 +4,31 @@
 
 Command guards for coding agents. Bash guards that deny or ask on destructive commands before they run, wired into the coding agent harnesses that run them. Standalone: needs only bash, and jq for Claude Code.
 
-> **A safety net, not a security boundary.** Each guard decides from the command text alone, so a determined or creative command can slip past a pattern. Real protection is credential scope (a read-only cloud profile, a kubeconfig without prod) and isolation (containers, worktrees, sandboxes). These guards catch the mistakes those let through. Layering is in [`setup.md`](setup.md).
+> **A safety net, not a security boundary.** The guards catch an agent's mistakes, not an agent working against you. Real protection sits below them: credential scope and isolation. Layering is in [`setup.md`](setup.md).
+
+## What it stops, and what it does not
+
+**Stops**, per command, before it runs:
+
+- destructive or irreversible verbs in the tools it covers: version control, its hosting CLI, Kubernetes, infrastructure as code, cloud control planes, managed databases, object storage, secrets stores and the filesystem;
+- the same verbs written with quotes, backslashes or tabs, since the guards match the command as the shell will see it;
+- a pipe into a shell, or a command named by a variable or substitution: these ask, because the guards cannot see what will run.
+
+**Does not stop**:
+
+- a command that lives in a file: a script, a `make` target, an `npm run` script;
+- a program that builds its own argv, as `python -c` or `perl -e` with `subprocess` or `system`;
+- another client for a guarded resource: an alias, a vendor fork, `curl` to its API, an SDK;
+- tools nothing guards yet;
+- an agent that sets out to get past them. A pattern on text loses to anyone rewriting the text.
+
+Every known gap is a test case in [`guards/known-leaks`](guards/known-leaks): the suite expects each to pass silently, so closing one is a visible change.
+
+**Use instead, or underneath**: a read-only cloud profile, a kubeconfig without prod, no push rights to protected branches, deletion protection and backups on the data, and a container or sandbox with no production credentials in it. Those hold whatever the agent types.
+
+## Cost
+
+Local bash, no model calls, no tokens. About 0.1 s per shell command.
 
 ## Install
 

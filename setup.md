@@ -63,6 +63,14 @@ Guards never return "allow". Granting from a hook would override rules written e
 
 Keep `deny` small. A denied command cannot be authorised in session, only by editing the guard, so it is reserved for the irreversible.
 
+## Threat model
+
+**Built for mistakes.** An agent that means well and gets it wrong: deletes the wrong namespace, force-pushes, wipes a table. A mistake is written the normal way, so a pattern catches it.
+
+**Not built for attacks.** An agent that was prompt-injected, or is set on a result, can hide the command in a script, a Python call or a `curl`. Text matching cannot follow it there.
+
+**So:** protect against attacks with what the agent cannot reach (read-only credentials, no prod access, a sandbox). Use these guards for the everyday mistakes those let through.
+
 ## Permissions are the last line, not the first
 
 Every layer above beats the one below it, and this folder is the second weakest. Push work down the table wherever it will go.
