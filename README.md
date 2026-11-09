@@ -36,7 +36,7 @@ Add it to `opencode.json`, globally (`~/.config/opencode/opencode.json`) or per 
 { "plugin": ["@rocharm/agent-guardrails"] }
 ```
 
-opencode installs it from npm at startup. Pin a version (`@rocharm/agent-guardrails@2.0.0`) to control updates.
+opencode installs it from npm at startup. Pin a version (`@rocharm/agent-guardrails@0.1.0`) to control updates.
 
 </details>
 

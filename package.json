@@ -1,6 +1,6 @@
 {
   "name": "@rocharm/agent-guardrails",
-  "version": "1.2.0",
+  "version": "0.1.0",
   "description": "Command guards for coding agents: deny or ask on destructive commands before they run.",
   "author": "Ricardo Rocha",
   "license": "MIT",

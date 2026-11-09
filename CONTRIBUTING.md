@@ -34,3 +34,5 @@ Versions follow [SemVer](https://semver.org), read for a tool whose output is de
 - **Major**: a change that breaks an install or the wiring: the plugin or package name, the hook contract, a harness dropped.
 - **Minor**: a change that can add decisions: a guard or rule added, a rule moved from ask to deny, a new spelling or file read.
 - **Patch**: a change that only removes wrong decisions: a false positive gone, a rule moved from deny to ask.
+
+Until 1.0.0, a breaking change is a minor and everything else a patch.
