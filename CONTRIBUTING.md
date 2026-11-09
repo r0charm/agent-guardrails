@@ -27,7 +27,7 @@ Nothing outside the folder names a guard, so dropping one is deleting its folder
 
 ## Releases
 
-A pull request that changes a decision or the install adds a changeset: `npx changeset`, pick the bump, write one line for users. On `main`, the release workflow gathers them into a "Version packages" pull request; merging it bumps `package.json`, copies the version into `.claude-plugin/plugin.json`, writes [CHANGELOG.md](CHANGELOG.md), publishes to npm and tags the release. Claude Code installs update when `plugin.json`'s version changes, opencode installs when npm's does.
+A pull request that changes a decision or the install adds a changeset: `npx changeset`, pick the bump, write one line for users. On `main`, the release workflow gathers them into a "Version packages" pull request; merging it bumps `package.json`, copies the version into `.claude-plugin/plugin.json`, writes [CHANGELOG.md](CHANGELOG.md), publishes to npm and tags the release. Publishing runs only when the repository variable `NPM_PUBLISH` is `true`, set once npm trusts the workflow (Trusted Publisher on npmjs.com, repo `r0charm/agent-guardrails`, workflow `release.yml`). Claude Code installs update when `plugin.json`'s version changes, opencode installs when npm's does.
 
 Versions follow [SemVer](https://semver.org), read for a tool whose output is decisions:
 
