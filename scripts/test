@@ -76,10 +76,16 @@ fi
 # An ask must still be an ask where jq is missing, since only Claude Code's
 # stdin path needs it. Run with a PATH holding only what the runner uses.
 nojq=$(mktemp -d)
-for b in bash grep tr dirname basename; do ln -s "$(command -v "$b")" "$nojq/$b"; done
+for b in bash grep sed tr dirname basename; do ln -s "$(command -v "$b")" "$nojq/$b"; done
 PATH="$nojq" scripts/guard "git push" 2>/dev/null | grep -q '"ask"' \
   || { fail=$((fail+1)); echo "FAIL an ask passes silently when jq is missing"; }
 rm -rf "$nojq"
+
+# A backslash-newline joins two lines into one command, which a case, being one
+# line, cannot express.
+scripts/guard "git \\
+push" | grep -q '"ask"' \
+  || { fail=$((fail+1)); echo "FAIL a line continuation splits a command the guards then miss"; }
 
 echo "$pass passed, $fail failed, $known known leaks"
 [ "$fail" -eq 0 ]

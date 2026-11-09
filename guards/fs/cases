@@ -35,3 +35,7 @@ PASS rm -rf "$HOME/.cache/x"
 PASS rm -rf ./*
 PASS rm build/app.js
 PASS confirm worktree
+# what the shell expands to a space, nothing or plain words
+DENY rm${IFS}-rf /
+DENY r${x}m -rf /
+PASS ls {a,b}

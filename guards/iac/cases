@@ -31,3 +31,6 @@ PASS terraform output
 PASS terraform fmt
 PASS tofu validate
 PASS terragrunt hclfmt
+# what the shell expands to a space, nothing or plain words
+ASK terraform${IFS}destroy
+ASK terra${x}form destroy

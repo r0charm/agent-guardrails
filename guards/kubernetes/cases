@@ -42,3 +42,9 @@ PASS kubectl describe deploy/label-printer
 PASS kubectl get secret s
 PASS kubectl config view
 PASS kubectl config view --minify
+# what the shell expands to a space, nothing or plain words
+DENY kubectl${IFS}delete ns prod
+DENY kubectl delete${IFS}ns prod
+DENY kubectl delete $'n\163' prod
+DENY {kubectl,delete,ns,prod}
+PASS kubectl get pods -l app=${APP}
