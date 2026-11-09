@@ -17,13 +17,13 @@ Requires bash 3.2+ (macOS's default works), and `jq` for Claude Code. Pick one p
 <summary><strong>Claude Code</strong></summary>
 
 ```bash
-claude plugin marketplace add r0charm/plugins
-claude plugin install agent-guardrails@r0charm
+claude plugin marketplace add r0charm/agent-guardrails
+claude plugin install agent-guardrails@agent-guardrails
 ```
 
-Or in a session: `/plugin marketplace add r0charm/plugins`, then `/plugin install agent-guardrails@r0charm`. Restart the session; `claude plugin details agent-guardrails` shows it loaded.
+Or in a session: `/plugin marketplace add r0charm/agent-guardrails`, then `/plugin install agent-guardrails@agent-guardrails`. Restart the session; `claude plugin details agent-guardrails` shows it loaded.
 
-Update with `claude plugin marketplace update r0charm`, then `claude plugin update agent-guardrails@r0charm`.
+Update with `claude plugin marketplace update agent-guardrails`, then `claude plugin update agent-guardrails@agent-guardrails`.
 
 </details>
 

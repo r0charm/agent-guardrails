@@ -2,7 +2,7 @@
 
 ## What this repo is
 
-Bash guards that deny or ask on destructive commands. Each guard is a folder in `guards/`: `rules`, `cases` and `policy.md`. `scripts/guard` runs them all and returns one decision; it is the only thing the wiring calls: Claude Code (`hooks/hooks.json`) and opencode (`.opencode/plugin.ts`, published to npm as `@rocharm/agent-guardrails`). The Claude Code marketplace is not here: it is `r0charm/plugins`, which lists every r0charm plugin. Standalone. Tiers and rationale in `setup.md`.
+Bash guards that deny or ask on destructive commands. Each guard is a folder in `guards/`: `rules`, `cases` and `policy.md`. `scripts/guard` runs them all and returns one decision; it is the only thing the wiring calls: Claude Code (`hooks/hooks.json`) and opencode (`.opencode/plugin.ts`, published to npm as `@rocharm/agent-guardrails`). The repo is its own Claude Code marketplace, `agent-guardrails` (`.claude-plugin/marketplace.json`, listing `./`). Standalone. Tiers and rationale in `setup.md`.
 
 ## Editing here
 

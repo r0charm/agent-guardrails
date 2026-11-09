@@ -56,10 +56,8 @@ python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["
 grep -q 'path.join(scripts, "guard")' .opencode/plugin.ts || { fail=$((fail+1)); echo "FAIL .opencode/plugin.ts does not call scripts/guard"; }
 python3 -c 'import json, sys; sys.exit(json.load(open("package.json"))["version"] != json.load(open(".claude-plugin/plugin.json"))["version"])' \
   || { fail=$((fail+1)); echo "FAIL package.json and .claude-plugin/plugin.json disagree on the version"; }
-# The marketplace lives in r0charm/plugins; one here would be a second
-# marketplace of the same name.
-[ ! -e .claude-plugin/marketplace.json ] \
-  || { fail=$((fail+1)); echo "FAIL .claude-plugin/marketplace.json is back; the marketplace is r0charm/plugins"; }
+python3 -c 'import json, sys; m = json.load(open(".claude-plugin/marketplace.json")); sys.exit(m["name"] != "agent-guardrails" or m["plugins"][0]["source"] != "./" or "version" in m["plugins"][0])' \
+  || { fail=$((fail+1)); echo "FAIL .claude-plugin/marketplace.json is not the agent-guardrails marketplace listing this repo, or pins a version plugin.json would override"; }
 python3 -c 'import json, sys; p = json.load(open("package.json")); sys.exit(p.get("main") != ".opencode/plugin.ts" or not {".opencode/plugin.ts", "scripts/guard", "guards"} <= set(p.get("files", [])))' \
   || { fail=$((fail+1)); echo "FAIL package.json does not ship the opencode plugin, the runner and the guards"; }
 
