@@ -1,6 +1,6 @@
 # agent-guardrails
 
-[![version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fr0charm%2Fagent-guardrails%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version)](CHANGELOG.md) [![npm](https://img.shields.io/npm/v/@rocharm/agent-guardrails)](https://www.npmjs.com/package/@rocharm/agent-guardrails) [![license](https://img.shields.io/github/license/r0charm/agent-guardrails)](LICENSE)
+[![checks](https://github.com/r0charm/agent-guardrails/actions/workflows/checks.yml/badge.svg)](https://github.com/r0charm/agent-guardrails/actions/workflows/checks.yml) [![version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fr0charm%2Fagent-guardrails%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version)](CHANGELOG.md) [![npm](https://img.shields.io/npm/v/@rocharm/agent-guardrails)](https://www.npmjs.com/package/@rocharm/agent-guardrails) [![license](https://img.shields.io/github/license/r0charm/agent-guardrails)](LICENSE)
 
 Stop a coding agent before it runs a command that cannot be undone: a force push, a deleted namespace, a dropped table, `rm -rf` on the wrong path.
 
