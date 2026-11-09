@@ -2,7 +2,7 @@
   "name": "agent-guardrails",
   "version": "1.2.0",
   "private": true,
-  "description": "Command guards for coding agents (Claude Code, opencode, Pi).",
+  "description": "Command guards for coding agents (Claude Code, opencode).",
   "author": "Ricardo Rocha",
   "license": "MIT",
   "homepage": "https://github.com/r0charm/agent-guardrails",
@@ -10,8 +10,9 @@
     "type": "git",
     "url": "https://github.com/r0charm/agent-guardrails.git"
   },
-  "keywords": ["pi-package", "claude-code", "opencode", "pi", "guardrails"],
-  "pi": {
-    "extensions": ["./.pi/plugin.ts"]
-  }
+  "keywords": [
+    "claude-code",
+    "opencode",
+    "guardrails"
+  ]
 }
