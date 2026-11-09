@@ -15,4 +15,4 @@ All are **ask**: none is destructive in itself, it is that the guards cannot tel
 
 ## Known limits
 
-What runs from a file the command names is out of reach for a guard that decides from the command alone: `bash deploy.sh`, `make release`, `npm run deploy`, and a program passing argv as a list (`subprocess.run(['git', 'push'])`). That is what credential scope and isolation are for. `guards/known-leaks` lists each, and `scripts/test` checks every guard stays silent on them, so a change that closes or widens one shows up.
+What runs from a file the command names is out of reach for a guard that decides from the command alone: `bash deploy.sh`, `make release`, `npm run deploy`. An argv list written inline, `subprocess.run(['git', 'push'])`, is read as the words it runs; one built from variables is not. That is what credential scope and isolation are for. `guards/known-leaks` lists each, and `scripts/test` checks every guard stays silent on them, so a change that closes or widens one shows up.

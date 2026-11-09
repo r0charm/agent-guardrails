@@ -11,13 +11,13 @@ Command guards for coding agents. Bash guards that deny or ask on destructive co
 **Stops**, per command, before it runs:
 
 - destructive or irreversible verbs in the tools it covers: version control, its hosting CLI, Kubernetes, infrastructure as code, cloud control planes, managed databases, object storage, secrets stores and the filesystem;
-- the same verbs written with quotes, backslashes or tabs, since the guards match the command as the shell will see it;
+- the same verbs written with quotes, backslashes, tabs, `$IFS`, empty expansions, brace expansion or `$'..'` escapes, since the guards match the command as the shell will see it;
 - a pipe into a shell, or a command named by a variable or substitution: these ask, because the guards cannot see what will run.
 
 **Does not stop**:
 
 - a command that lives in a file: a script, a `make` target, an `npm run` script;
-- a program that builds its own argv, as `python -c` or `perl -e` with `subprocess` or `system`;
+- a program that builds a command from variables or data at run time; an argv list written inline, as `subprocess.run(['git', 'push'])`, is read;
 - another client for a guarded resource: an alias, a vendor fork, `curl` to its API, an SDK;
 - tools nothing guards yet;
 - an agent that sets out to get past them. A pattern on text loses to anyone rewriting the text.

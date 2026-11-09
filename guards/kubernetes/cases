@@ -48,3 +48,5 @@ DENY kubectl delete${IFS}ns prod
 DENY kubectl delete $'n\163' prod
 DENY {kubectl,delete,ns,prod}
 PASS kubectl get pods -l app=${APP}
+# an argv list, as an interpreter hands it to exec
+DENY node -e 'require("child_process").spawnSync("kubectl",["delete","ns","prod"])'
