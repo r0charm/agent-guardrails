@@ -20,6 +20,9 @@
 #   CASE_SENSITIVE  set to 1 where case carries meaning, as in git, where
 #                   `branch -D` force-deletes and `branch -d` refuses an
 #                   unmerged branch.
+#   COMMAND_ONLY    set to 1 for a guard that reads the command as typed but
+#                   not the files it runs, where what it matches is ordinary
+#                   in a script.
 #
 # Each list entry is "pattern<TAB>reason", so the reason shown names the rule
 # that fired rather than the whole list.
@@ -33,10 +36,13 @@
 # Usage: guard [--only NAME] [COMMAND...]
 #   With no COMMAND, reads Claude Code's hook event as JSON on stdin.
 #   --only runs one guard, which is how scripts/test checks each in isolation.
+#   Relative file names resolve against the event's cwd, or the working
+#   directory when COMMAND is given.
 
 set -uo pipefail
 
 guards="$(cd "$(dirname "$0")/.." && pwd)/guards"
+self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 
 only=""
 if [ "${1:-}" = "--only" ]; then
@@ -44,12 +50,20 @@ if [ "${1:-}" = "--only" ]; then
   shift 2
 fi
 
+# How many files deep this run is. 0 is the command as typed; a file it runs is
+# read by a nested run, which reports to its parent instead of the harness.
+depth=${GUARD_DEPTH:-0}
+
 # Claude Code sends the event as JSON on stdin. Everything else passes the
-# command as arguments, which is also how the guards are tested.
+# command as arguments, which is also how the guards are tested, and runs the
+# guard in the directory the command will run in.
 if [ "$#" -gt 0 ]; then
   command="$*"
 elif command -v jq >/dev/null 2>&1; then
-  command=$(jq -r '.tool_input.command // empty')
+  event=$(cat)
+  command=$(printf '%s' "$event" | jq -r '.tool_input.command // empty')
+  dir=$(printf '%s' "$event" | jq -r '.cwd // empty')
+  [ -z "$dir" ] || cd "$dir" 2>/dev/null || true
 else
   # No jq means no way to read the event. Say so rather than exiting 0 and
   # leaving the caller believing a guard ran.
@@ -82,24 +96,30 @@ while [[ $norm =~ $re ]]; do
   norm=${norm/"${BASH_REMATCH[0]}"/"$(printf '%b' "$body")"}
 done
 # Backticks are the old spelling of $(...), which the guards already read.
-# Then: IFS is whitespace; a default stands in for its unset variable; every
-# other expansion of an unset name is empty.
+# Then: IFS is whitespace; a default stands in for its unset variable.
 # shellcheck disable=SC2016 # sed expressions, meant literally
 norm=$(printf '%s' "$norm" | sed -E \
   -e 's/`([^`]*)`/$(\1)/g' \
   -e 's/\$\{IFS[^}]*\}|\$IFS/ /g' \
   -e 's/\$\{[A-Za-z_][A-Za-z0-9_]*:?[-=]([^}]*)\}/\1/g' \
-  -e 's/\$\{[^}]*\}|\$[@*0-9]|\$[A-Za-z_][A-Za-z0-9_]*//g' \
   -e "s/\\[ *([\"'])/ \\1/g" -e "s/([\"']) *\\]/\\1 /g" \
   -e "s/([\"']) *, *([\"'])/\\1 \\2/g")
 # The last three join an argv list, as an interpreter hands it to exec, into
 # the words it runs: `['git','push']` reads as `git push`.
+#
+# An expansion inside a word, `g${x}it`, is dropped: unset, it is how the trick
+# works. One that starts a word stays, so `rm -rf "$DIR"/*` does not read as
+# `rm -rf /*`.
+# shellcheck disable=SC2016 # sed expressions, meant literally
+norm=$(printf '%s' "$norm" | sed -E -e ':a' \
+  -e 's/([A-Za-z0-9_.-])(\$\{[^}]*\}|\$[@*0-9]|\$[A-Za-z_][A-Za-z0-9_]*)/\1/' -e 'ta')
 # Brace expansion of a whole word: `{git,push}` runs `git push`.
 re='(^|[[:space:];&|(])\{([^{}[:space:];&|()$]*,[^{}[:space:];&|()$]*)\}([[:space:];&|)]|$)'
 while [[ $norm =~ $re ]]; do
   words=${BASH_REMATCH[2]//,/ }
   norm=${norm/"${BASH_REMATCH[0]}"/"${BASH_REMATCH[1]}$words${BASH_REMATCH[3]}"}
 done
+quoted=$norm
 norm=$(printf '%s' "$norm" | tr -d "'\"\\\\" | tr '\t' ' ')
 seen="$seen"$'\n'"$norm"
 
@@ -120,15 +140,27 @@ match() {
 
 # Prints "DENY<TAB>reason", "ASK<TAB>reason" or nothing.
 evaluate() (
-  SCOPE="" SKIP="" CASE_SENSITIVE="" DENY=() ASK=()
+  SCOPE="" SKIP="" CASE_SENSITIVE="" COMMAND_ONLY="" DENY=() ASK=()
   # shellcheck source=/dev/null
   . "$1"
+  [ "$depth" -eq 0 ] || [ -z "$COMMAND_ONLY" ] || exit 0
   [ -n "$SCOPE" ] || { printf 'DENY\t%s has no SCOPE, so it cannot be trusted to run' "$1"; exit; }
   printf '%s' "$seen" | grep -qE "$SCOPE" || exit 0
   if [ -n "$SKIP" ] && printf '%s' "$seen" | grep -qE "$SKIP"; then exit 0; fi
   if reason=$(match "${DENY[@]:-}"); then printf 'DENY\t%s' "$reason"; exit; fi
   if reason=$(match "${ASK[@]:-}"); then printf 'ASK\t%s' "$reason"; fi
 )
+
+# Ends the run with a deny. A nested run reports it to its parent instead.
+deny() {
+  if [ "$depth" -gt 0 ]; then printf 'DENY\t%s\n' "$1"; exit 0; fi
+  echo "BLOCKED ($1" >&2
+  echo "" >&2
+  echo "  Command: $command" >&2
+  echo "" >&2
+  echo "This is denied outright, not pending approval. Run it yourself if you mean it." >&2
+  exit 2
+}
 
 asks=()
 for rules in "$guards"/*/rules; do
@@ -137,17 +169,196 @@ for rules in "$guards"/*/rules; do
   [ -z "$only" ] || [ "$name" = "$only" ] || continue
   result=$(evaluate "$rules")
   case "$result" in
-    DENY*)
-      echo "BLOCKED ($name): ${result#*	}" >&2
-      echo "" >&2
-      echo "  Command: $command" >&2
-      echo "" >&2
-      echo "This is denied outright, not pending approval. Run it yourself if you mean it." >&2
-      exit 2
-      ;;
+    DENY*) deny "$name): ${result#*	}" ;;
     ASK*) asks+=("$name: ${result#*	}") ;;
   esac
 done
+
+# --- What the command runs from a file ---------------------------------------
+#
+# A command that runs a script, a make target or a package.json script hides
+# what runs in a file. Read the file and run every guard over it, in a nested
+# run, so `bash deploy.sh` decides as its contents would. The file is read as
+# text: what it builds at run time stays out of reach, as it does typed.
+#
+# What cannot be read asks: a file too large, or files nested deeper than
+# `limit`. A compiled program is not read and stays silent, as it always has,
+# and so does a file that is not there: the command fails, or its name came
+# from an expansion the guards cannot read either way.
+limit=3
+max=131072
+
+# Runs the guards over TEXT read from WHERE, folding the result into this run.
+scan() {
+  local where=$1 text=$2 line
+  [ -n "$text" ] || return 0
+  if [ "$depth" -ge "$limit" ]; then
+    asks+=("runs $where, nested deeper than the guards read"); return 0
+  fi
+  while IFS= read -r line; do
+    case "$line" in
+      DENY*) deny "${line#*	}, in $where" ;;
+      ASK*) asks+=("${line#*	}, in $where") ;;
+    esac
+  done < <(GUARD_DEPTH=$((depth + 1)) "$self" ${only:+--only "$only"} "$text")
+}
+
+# Reads a script file named by the command, or asks why it cannot.
+script() {
+  local f=$1 size
+  f=${f/#\~/$HOME}
+  [ -f "$f" ] || return 0
+  grep -Iq . "$f" 2>/dev/null || return 0
+  size=$(wc -c <"$f" | tr -d ' ')
+  if [ "$size" -gt "$max" ]; then asks+=("runs $f, too large for the guards to read"); return; fi
+  scan "$f" "$(grep -v '^[[:space:]]*#' "$f")"
+}
+
+# Prints the recipes TARGETS run in MAKEFILE, prerequisites included, with the
+# makefile's own variables expanded and an undefined one read as its name in
+# lower case, so `$(KUBECTL) delete` reads as `kubectl delete`.
+recipes() {
+  awk -v want="$2" '
+    function expand(s,   out, name, i, n) {
+      for (n = 0; n < 4 && match(s, /\$[({][A-Za-z_][A-Za-z0-9_]*[)}]/); n++) {
+        out = ""
+        while (match(s, /\$[({][A-Za-z_][A-Za-z0-9_]*[)}]/)) {
+          name = substr(s, RSTART + 2, RLENGTH - 3)
+          out = out substr(s, 1, RSTART - 1) ((name in val) ? val[name] : tolower(name))
+          s = substr(s, RSTART + RLENGTH)
+        }
+        s = out s
+      }
+      gsub(/\$\$/, "$", s)
+      return s
+    }
+    /^\t/ { if (cur != "") body[cur] = body[cur] substr($0, 2) "\n"; next }
+    /^[A-Za-z_][A-Za-z0-9_]*[ \t]*[?:+]*=/ {
+      name = $0; sub(/[ \t]*[?:+]*=.*/, "", name)
+      v = $0; sub(/^[^=]*=[ \t]*/, "", v); val[name] = v; cur = ""; next
+    }
+    /^[^#\t][^=]*:/ && !/^[^:]*:=/ {
+      split($0, side, ":"); n = split(side[1], ts, /[ \t]+/)
+      deps = substr($0, index($0, ":") + 1); sub(/;.*/, "", deps); sub(/^:/, "", deps)
+      cur = ""
+      for (i = 1; i <= n; i++) if (ts[i] != "") {
+        cur = cur " " ts[i]; pre[ts[i]] = pre[ts[i]] " " deps
+        if (first == "" && ts[i] !~ /^\./ && ts[i] !~ /%/) first = ts[i]
+      }
+      cur = substr(cur, 2); split(cur, curs, " "); cur = curs[1]
+      for (i = 2; i in curs; i++) alias[curs[i]] = cur
+      next
+    }
+    END {
+      if (want == "") want = first
+      n = split(want, queue, " "); q = 1
+      while (q <= n && q < 200) {
+        t = queue[q++]; if (t in alias) t = alias[t]
+        if (t == "" || (t in seen)) continue
+        seen[t] = 1; printf "%s", expand(body[t])
+        m = split(expand(pre[t]), ds, /[ \t]+/)
+        for (i = 1; i <= m; i++) if (ds[i] != "") queue[++n] = ds[i]
+      }
+    }' "$1" | sed -E 's/^[[:space:]]*[@+-]+//'
+}
+
+# Prints the package.json script NAME, with its pre and post scripts.
+pkgscript() {
+  awk -v want="$1" '
+    /"scripts"[ \t]*:/ { on = 1; next }
+    on && /^[ \t]*}/ { on = 0 }
+    on {
+      line = $0; sub(/^[ \t]*"/, "", line)
+      key = substr(line, 1, index(line, "\"") - 1)
+      if (key != "pre" want && key != want && key != "post" want) next
+      v = substr(line, index(line, "\"") + 1); sub(/^[ \t]*:[ \t]*"/, "", v)
+      sub(/"[ \t]*,?[ \t]*$/, "", v); gsub(/\\"/, "\"", v); gsub(/\\\\/, "\\", v)
+      out[key] = v
+    }
+    END { printf "%s\n%s\n%s\n", out["pre" want], out[want], out["post" want] }' package.json 2>/dev/null
+}
+
+# Each simple command in the normalized text, wrappers peeled, decides what
+# file it runs. A `cd` earlier in the command moves where a relative name is
+# found, as it would when it runs.
+here=$PWD
+while IFS= read -r seg; do
+  read -ra w <<<"$seg"
+  [ "${#w[@]}" -gt 0 ] || continue
+  i=0
+  while [ "$i" -lt "${#w[@]}" ]; do
+    case "${w[$i]}" in
+      sudo|doas|env|nohup|nice|time|timeout|exec|command|xargs|stdbuf|-*|[0-9]*|[A-Za-z_]*=*) i=$((i + 1)) ;;
+      *) break ;;
+    esac
+  done
+  [ "$i" -lt "${#w[@]}" ] || continue
+  cmd=${w[$i]}; args=("${w[@]:$((i + 1))}")
+  case "$cmd" in
+    cd)
+      [ "${#args[@]}" -gt 0 ] && { cd "${args[0]}" 2>/dev/null || true; } ;;
+    bash|sh|zsh|dash|ksh|source|.|python|python3|python3.*|node|perl|ruby|tsx|ts-node|deno)
+      for a in "${args[@]:-}"; do
+        case "$a" in
+          -c|-e|-p|-m|--eval|--print) break ;;
+          run|-*|"") continue ;;
+          *) script "$a"; break ;;
+        esac
+      done ;;
+    mongosh|mongo)
+      for ((j = 0; j < ${#args[@]}; j++)); do
+        case "${args[$j]}" in
+          -f|--file) script "${args[$((j + 1))]:-}"; break ;;
+          *.js) script "${args[$j]}"; break ;;
+        esac
+      done ;;
+    make|gmake)
+      mdir=. mfile="" targets=""
+      for ((j = 0; j < ${#args[@]}; j++)); do
+        case "${args[$j]}" in
+          -C) mdir=${args[$((j + 1))]:-.}; j=$((j + 1)) ;;
+          -f|--file|--makefile) mfile=${args[$((j + 1))]:-}; j=$((j + 1)) ;;
+          -*|*=*) ;;
+          *) targets="$targets ${args[$j]}" ;;
+        esac
+      done
+      if [ -z "$mfile" ]; then
+        for m in GNUmakefile makefile Makefile; do [ -f "$mdir/$m" ] && { mfile=$m; break; }; done
+      fi
+      [ -n "$mfile" ] && [ -f "$mdir/$mfile" ] && scan "make${targets:- (default target)}" "$(recipes "$mdir/$mfile" "${targets# }")" ;;
+    npm|pnpm|yarn|bun)
+      s=""
+      case "${args[0]:-}" in
+        run|run-script) s=${args[1]:-} ;;
+        t) s="test" ;;
+        test|start|stop|restart) s=${args[0]} ;;
+        *) [ "$cmd" = yarn ] || [ "$cmd" = pnpm ] && s=${args[0]:-} ;;
+      esac
+      [ -n "$s" ] && [ -f package.json ] && scan "$cmd run $s" "$(pkgscript "$s")" ;;
+    */*)
+      [ -x "${cmd/#\~/$HOME}" ] && script "$cmd" ;;
+  esac
+done < <(printf '%s\n' "$quoted" | awk '
+  # One simple command per line: split on separators outside quotes, then
+  # drop the quotes, so `sed "s|a|b|" f` stays one command.
+  {
+    out = ""; q = ""
+    for (i = 1; i <= length($0); i++) {
+      c = substr($0, i, 1)
+      if (q == "" && c == "\\") { out = out substr($0, i + 1, 1); i++; continue }
+      if (q != "" && c == q) { q = ""; continue }
+      if (q == "" && (c == "\"" || c == "\047")) { q = c; continue }
+      if (q == "" && index(";&|()", c)) { print out; out = ""; continue }
+      out = out c
+    }
+    gsub(/\t/, " ", out); print out
+  }')
+cd "$here" || true
+
+if [ "$depth" -gt 0 ]; then
+  for a in "${asks[@]:-}"; do [ -z "$a" ] || printf 'ASK\t%s\n' "$a"; done
+  exit 0
+fi
 
 # Written without jq: opencode and Pi pass the command as arguments and never
 # reach the jq check above, so an ask built with jq would fail to print and

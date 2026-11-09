@@ -25,4 +25,4 @@ Matched by method, `.name(`, so a field or key named after a verb stays silent.
 
 `find`, `findOne`, `countDocuments`, `aggregate` without `$out` or `$merge`, `getIndexes`.
 
-A script passed by file, `mongosh --file wipe.js`, is out of reach for a guard that reads the command alone. It is in `guards/known-leaks`.
+A script passed by file, `mongosh --file wipe.js`, is read by the runner and decided from its contents.

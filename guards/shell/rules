@@ -21,5 +21,9 @@ ASK=(
   "${C}(git|gh|kubectl|helm|terraform|tofu|terragrunt|aws) +\\\$"$'\tgives a guarded tool its subcommand from a variable, so the guard for it cannot read the verb'
 )
 
+# A script is full of these, so in one they would ask on almost every file run,
+# a prompt people learn to click through. The other guards still read the file.
+COMMAND_ONLY=1
+
 # Commands this guard looks at at all, so it stays out of the others' way.
 SCOPE='(\||eval|\$|<\()'

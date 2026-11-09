@@ -16,7 +16,7 @@ Command guards for coding agents. Bash guards that deny or ask on destructive co
 
 **Does not stop**:
 
-- a command that lives in a file: a script, a `make` target, an `npm run` script;
+- a file named through an expansion, `bash $DIR/deploy.sh`, or run by a tool whose files are not read, as `just` or `task`; scripts, `make` targets and `npm run` scripts are read, three files deep;
 - a program that builds a command from variables or data at run time; an argv list written inline, as `subprocess.run(['git', 'push'])`, is read;
 - another client for a guarded resource: an alias, a vendor fork, `curl` to its API, an SDK;
 - tools nothing guards yet;
@@ -28,7 +28,7 @@ Every known gap is a test case in [`guards/known-leaks`](guards/known-leaks): th
 
 ## Cost
 
-Local bash, no model calls, no tokens. About 0.1 s per shell command.
+Local bash, no model calls, no tokens. About 0.1 s per shell command, a little more when it runs a file the guards read.
 
 ## Install
 

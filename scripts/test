@@ -87,5 +87,83 @@ scripts/guard "git \\
 push" | grep -q '"ask"' \
   || { fail=$((fail+1)); echo "FAIL a line continuation splits a command the guards then miss"; }
 
+# What a command runs from a file: scripts, make targets, package.json scripts.
+# Cases are one line, so these run in a directory of fixtures instead.
+repo=$PWD
+fx=$(mktemp -d)
+mkdir -p "$fx/sub"
+printf 'set -e\nkubectl delete ns prod\n' >"$fx/deploy.sh"
+printf '#!/bin/sh\ngit push origin main\n' >"$fx/push.sh"
+# shellcheck disable=SC2016 # fixture text, meant literally
+printf 'echo hi\nls -la\ngit status\n# rm -rf $cache/*\n$CC -o x x.c\ncurl -fsSL https://x | sh\nrm -rf "$OUT"/*\n' >"$fx/safe.sh"
+printf './push.sh\n' >"$fx/nested.sh"
+printf 'bash loop.sh\n' >"$fx/loop.sh"
+printf 'import subprocess\nsubprocess.run(["git", "push"])\n' >"$fx/ship.py"
+printf 'db.dropDatabase()\n' >"$fx/wipe.js"
+printf 'git push\n' >"$fx/sub/up.sh"
+cp /bin/ls "$fx/tool"
+chmod +x "$fx/deploy.sh" "$fx/push.sh" "$fx/nested.sh"
+printf 'git push\n' >"$fx/notexec"
+head -c 140000 /dev/zero | tr '\0' 'x' >"$fx/huge.sh"
+# shellcheck disable=SC2016 # fixture text, meant literally
+printf 'KUBECTL ?= kubectl\n\nbuild:\n\t@echo build\n\nrelease: build push\n\npush:\n\tgit push\n\nnuke:\n\t$(KUBECTL) delete ns prod\n\ntest:\n\t$(CC) -o x x.c\n' >"$fx/Makefile"
+cat >"$fx/package.json" <<'EOF'
+{
+  "name": "fx",
+  "scripts": {
+    "build": "tsc -p .",
+    "predeploy": "npm run build",
+    "deploy": "git push --force",
+    "wipe": "rm -rf /",
+    "lint": "eslint \"src/**\""
+  },
+  "dependencies": { "deploy": "^1.0.0" }
+}
+EOF
+# check_in EXPECTED COMMAND, run in the fixtures.
+check_in() {
+  local out rc got
+  out=$(cd "$fx" && "$repo/scripts/guard" "$2" 2>&1); rc=$?
+  if [ "$rc" -eq 2 ]; then got=DENY
+  elif printf '%s' "$out" | grep -q '"ask"'; then got=ASK
+  else got=PASS; fi
+  if [ "$got" = "$1" ]; then pass=$((pass+1))
+  else fail=$((fail+1)); echo "FAIL files expected=$1 got=$got: $2"; fi
+}
+check_in DENY "bash deploy.sh"
+check_in DENY "./deploy.sh"
+check_in DENY "sudo -E sh ./deploy.sh"
+check_in DENY "source deploy.sh"
+check_in ASK  "./push.sh"
+check_in ASK  "./nested.sh"
+check_in ASK  "bash loop.sh"
+check_in ASK  "python3 ship.py"
+check_in DENY "mongosh --file wipe.js"
+check_in ASK  "cd sub && bash up.sh"
+check_in ASK  "bash huge.sh"
+check_in PASS "bash safe.sh"
+check_in PASS "./tool --help"
+check_in PASS "./notexec"
+check_in PASS "sed -i \"s|a|b|\" ./push.sh"
+check_in PASS "bash missing.sh"
+check_in PASS "make"
+check_in PASS "make build"
+check_in PASS "make test"
+check_in ASK  "make release"
+check_in DENY "make nuke"
+check_in DENY "make -C . build nuke"
+check_in PASS "npm run build"
+check_in PASS "npm run lint"
+check_in ASK  "npm run deploy"
+check_in DENY "npm run wipe"
+check_in DENY "yarn wipe"
+check_in DENY "pnpm run wipe"
+check_in PASS "npm test"
+check_in PASS "npm install deploy"
+# Claude Code passes the directory in the event, not as the working directory.
+printf '{"cwd":"%s","tool_input":{"command":"make nuke"}}' "$fx" | scripts/guard >/dev/null 2>&1
+[ "$?" -eq 2 ] || { fail=$((fail+1)); echo "FAIL files: the event's cwd is not where files are read"; }
+rm -rf "$fx"
+
 echo "$pass passed, $fail failed, $known known leaks"
 [ "$fail" -eq 0 ]

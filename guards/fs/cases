@@ -42,3 +42,6 @@ PASS ls {a,b}
 # an argv list, as an interpreter hands it to exec
 DENY python3 -c "os.execvp('rm', ['rm','-rf','/'])"
 PASS jq '[.a, .b]' f
+# an expansion that starts a word stays, so an unset one does not read as /
+PASS rm -rf "${BUILD}"/*
+PASS rm -rf $OUT/*
