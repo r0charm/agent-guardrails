@@ -1,5 +1,5 @@
 {
-  "name": "agent-guardrails",
+  "name": "r0charm",
   "description": "Command guards for coding agents.",
   "owner": { "name": "Ricardo Rocha" },
   "plugins": [

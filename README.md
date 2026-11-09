@@ -36,7 +36,14 @@ Local bash, no model calls, no tokens. About 0.1 s per shell command, a little m
 
 ```bash
 claude plugin marketplace add r0charm/agent-guardrails
-claude plugin install agent-guardrails@agent-guardrails
+claude plugin install agent-guardrails@r0charm
+```
+
+Installed before 1.2.0, the marketplace was named `agent-guardrails`. Remove it first, then add as above:
+
+```bash
+claude plugin uninstall agent-guardrails@agent-guardrails
+claude plugin marketplace remove agent-guardrails
 ```
 
 Or, from a clone you edit, load it in place:
