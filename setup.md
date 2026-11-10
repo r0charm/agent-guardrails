@@ -1,0 +1,118 @@
+# Setup
+
+Deterministic limits on what an agent does without asking.
+
+## Install
+
+Nothing to wire. Claude Code carries them with the plugin through `hooks/hooks.json` and opencode through `.opencode/plugin.ts`, so the root `README.md` install step is the whole setup.
+
+### Claude Code without the plugin
+
+Where plugins are off, or managed settings allow only managed hooks, wire the runner into a settings file yourself: `~/.claude/settings.json` for every project, `.claude/settings.json` for one. Point it at your clone and merge into any `hooks.PreToolUse` already there:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Monitor|PowerShell",
+        "hooks": [
+          { "type": "command", "command": "\"$HOME/src/agent-guardrails/scripts/guard\"", "onFailure": "block" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The matcher names every tool that runs a shell command; `Bash` alone misses the other two. `onFailure` blocks the call when the guard crashes or times out, instead of letting it through. The plugin's `hooks/hooks.json` is the same entry, and `scripts/test` checks it.
+
+**Verify they fire before trusting them.** A guard that was never wired is worse than none:
+
+```bash
+scripts/test
+```
+
+Then check each outcome by hand:
+
+```bash
+scripts/guard "git reflog expire --all"          # BLOCKED, exit 2
+scripts/guard "aws s3 sync . s3://b --delete"   # an ask decision
+scripts/guard "kubectl get pods"                # silent, exit 0
+```
+
+Finally, in a real session, ask for one and confirm you are stopped. That is the only check that proves the harness is actually running them.
+
+## What is guarded
+
+Each folder in [`guards/`](guards) is one guard: `rules` is what it matches, `cases` its tests, `policy.md` why. Commands no guard can see are listed in [`guards/known-leaks`](guards/known-leaks).
+
+Guards are split by system, one folder each, so the unit you add or drop is a tool you adopt or stop using. Within a guard, rules are grouped by what breaks: the data itself, the recovery net, writes, data out, access.
+
+## Tiers
+
+Each guard sorts a command into one of three outcomes.
+
+| Tier | Meaning | Outcome |
+|---|---|---|
+| **Deny** | no good reason for an agent to do this, and a distracted yes is an incident | exit 2, stopping the call before permission rules are evaluated |
+| **Ask** | legitimate, and needs a human looking at it | a `permissionDecision: "ask"`, which is still shown in auto mode |
+| Neither | falls through to whatever the permission rules say | exit 0 |
+
+Guards never return "allow". Granting from a hook would override rules written elsewhere, and nothing here is worth that.
+
+Keep `deny` small. A denied command cannot be authorised in session, only by editing the guard, so it is reserved for the irreversible.
+
+## Threat model
+
+**Built for mistakes.** An agent that means well and gets it wrong: deletes the wrong namespace, force-pushes, wipes a table. A mistake is written the normal way, so a pattern catches it.
+
+**Not built for attacks.** An agent that was prompt-injected, or is set on a result, can hide the command in a script, a Python call or a `curl`. Text matching cannot follow it there.
+
+**So:** protect against attacks with what the agent cannot reach (read-only credentials, no prod access, a sandbox). Use these guards for the everyday mistakes those let through.
+
+## Permissions are the last line, not the first
+
+Every layer above beats the one below it, and this folder is the second weakest. Push work down the table wherever it will go.
+
+| Layer | Prod infrastructure | Branches | Strength |
+|---|---|---|---|
+| Credential scope | the agent's AWS profile is read-only; its kubeconfig holds only non-prod contexts | the agent has no push rights to main | cannot be bypassed by anything |
+| Isolation | separate kubeconfig, container, sandbox | a worktree per feature | strong |
+| **These guards** | **deny and ask, per command** | **deny and ask, per command** | bypassed only by changing config |
+| Context | a skill, `CLAUDE.md` | instructions | advisory, and may not load |
+
+A kubeconfig without the prod context cannot have the gap a pattern can. Treat what is here as the layer that catches what the ones above let through.
+
+## The rules that shape the lists
+
+**A guard decides from the command and the files it runs.** The runner reads a script, make target or package.json script the command runs and hands its text to every guard, so a guard never reads a file itself. If a decision needs to know something about your infrastructure, the rule is wrong: make it coarser until it is decidable syntactically. Detecting which cluster is production was tried and removed for this reason. It existed only to avoid asking in non-prod, which is convenience, and every branch of it was a way to fail. A guard that can fail to recognise production is worse than one that asks every time.
+
+**Anything phrased as a prohibition belongs here, not in a skill.** A skill describes what exists. A "never do X" in a skill is a rule nobody enforces and that may not even load.
+
+**Anchor every verb.** Unanchored, `delete` fires on `-l app=delete-me`, `label` on `--show-labels`, `scale` on `deploy/scaler`. A guard that cries wolf on reads is one people learn to click through, which is the failure the whole design exists to avoid.
+
+## How the harness treats a guard
+
+Quoted from Claude Code's permissions and permission-modes documentation, because it decides how much any of this is worth:
+
+- Rules resolve before the classifier: *"Actions matching your allow, ask, or deny rules resolve immediately"*, then *"Everything else goes to the classifier."*
+- Both tiers hold everywhere: *"Deny rules block in every mode, including `bypassPermissions`"*, and explicit ask rules force a prompt there too.
+- A hook counts the same as a rule: *"Claude Code doesn't add the option to prompts forced by one of your ask rules or by a hook, because auto mode still shows you those prompts."*
+
+One caveat against leaning on a wide allowlist: entering auto mode drops broad allow rules that grant arbitrary execution, `Bash(*)`, wildcarded interpreters and package-manager run commands, while narrow ones like `Bash(npm test)` stay.
+
+A permission rule could express much of what these guards do, since a Bash pattern matches the whole command text with `*` standing in for any part. The guards earn their place on completeness instead: rules need every verb enumerated in both flag positions, and one nobody thought of fails silently.
+
+## Changing a guard
+
+`scripts/guard` takes the command as an argument, so a change is checked without a harness. `--only` runs one guard:
+
+```bash
+scripts/guard --only kubernetes "kubectl delete namespace prod"
+echo $?   # 2 denied, 0 with JSON asked, 0 with no output passed
+```
+
+Add the case to the guard's `cases` in the same edit, then run `scripts/test`. Every pattern has a test, including the reads that must stay silent.
+
+To add a guard, create `guards/<name>/` with `rules`, `cases` and `policy.md`; the header of `scripts/guard` lists what `rules` defines. To drop one, delete its folder. Nothing else names a guard.

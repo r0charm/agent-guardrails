@@ -1,0 +1,37 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied: the data itself
+DENY aws dynamodb delete-table --table-name t
+DENY aws --region eu-west-1 dynamodb delete-table --cli-input-json file://x.json
+# denied: the recovery net
+DENY aws dynamodb delete-backup --backup-arn a
+DENY aws dynamodb update-continuous-backups --table-name t --point-in-time-recovery-specification PointInTimeRecoveryEnabled=false
+# the ones that do not read as destructive
+ASK aws dynamodb put-item --table-name t
+ASK aws dynamodb update-time-to-live --table-name t --time-to-live-specification Enabled=true,AttributeName=ttl
+# data out
+ASK aws dynamodb export-table-to-point-in-time --table-arn a --s3-bucket b
+# writes
+ASK aws dynamodb delete-item --table-name t --key k
+ASK aws dynamodb batch-write-item --request-items file://w.json
+ASK aws dynamodb transact-write-items --transact-items file://t.json
+ASK aws dynamodb update-table --table-name t --no-deletion-protection-enabled
+ASK aws dynamodb restore-table-to-point-in-time --source-table-name t
+ASK aws dynamodb import-table --s3-bucket-source S3Bucket=b
+ASK aws dynamodb execute-statement --statement "DELETE FROM users WHERE pk='a'"
+ASK aws dynamodb execute-statement --statement "UPDATE users SET x=1 WHERE pk='a'"
+ASK aws dynamodb execute-statement --statement "INSERT INTO users VALUE {'pk': 'a'}"
+ASK aws dynamodb batch-execute-statement --statements file://s.json
+ASK aws dynamodb execute-transaction --transact-statements file://t.json
+ASK aws dynamodb update-continuous-backups --table-name t --point-in-time-recovery-specification PointInTimeRecoveryEnabled=true
+# access
+ASK aws dynamodb put-resource-policy --resource-arn a --policy file://p.json
+# reads, including tables named after verbs
+PASS aws dynamodb scan --table-name t
+PASS aws dynamodb query --table-name drop-logs
+PASS aws dynamodb describe-table --table-name delete-me
+PASS aws dynamodb describe-continuous-backups --table-name t
+PASS aws dynamodb list-backups
+PASS aws dynamodb execute-statement --statement "SELECT * FROM users WHERE pk='a'"

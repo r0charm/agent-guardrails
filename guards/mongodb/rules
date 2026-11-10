@@ -1,0 +1,36 @@
+# Guards MongoDB, from mongosh and the database tools. See policy.md.
+#
+# Matched by method, `.name(`, so a field or key named after a verb,
+# `sort({deleteMany: 1})`, stays silent.
+
+# A method call: `.name(`, with optional space before the paren.
+M='\.'
+P=' *\('
+T=$'\t'
+
+DENY=(
+  "${M}dropDatabase${P}|(runCommand|adminCommand)${P} *\{ *dropDatabase${T}drops the entire database"
+  "${M}(deleteMany|remove)${P} *\{ *\}${T}an empty filter matches every document in the collection"
+  "(mongorestore|mongoimport) +.*--drop${T}drops each collection before loading, so a wrong file replaces good data"
+)
+
+ASK=(
+  # The ones that do not read as destructive and are.
+  "${M}aggregate${P}.*\\\$(out|merge)${T}writes the pipeline's output over a collection"
+  "${M}renameCollection${P}${T}renames a collection, and with dropTarget drops the one it lands on"
+
+  # Data out.
+  "mongo(dump|export)${T}copies the data out to disk"
+
+  # Writes.
+  "${M}(drop|dropIndex|dropIndexes|deleteMany|deleteOne|remove|updateMany|updateOne|insertMany|insertOne|replaceOne|findOneAndDelete|findOneAndReplace|findOneAndUpdate|findAndModify|bulkWrite)${P}${T}changes collection data"
+  "(runCommand|adminCommand)${P} *\{ *(drop|delete|update|insert|findAndModify|renameCollection|shutdown)${T}runs a command that changes data or the server"
+  "mongoimport${T}writes documents into a collection"
+
+  # Access and the server itself.
+  "${M}(createUser|updateUser|dropUser|dropAllUsers|grantRolesToUser|revokeRolesFromUser|createRole|dropRole)${P}${T}changes who can do what in the database"
+  "${M}(shutdownServer|fsyncLock)${P}${T}stops or freezes the server"
+)
+
+# Commands this guard looks at at all, so it stays out of the others' way.
+SCOPE='(^|[^[:alnum:]_-])(mongo[a-z]*|db\.|db\[)|(runCommand|adminCommand|getSiblingDB|getCollection)'

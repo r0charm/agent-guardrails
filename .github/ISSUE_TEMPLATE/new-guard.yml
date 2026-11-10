@@ -1,0 +1,31 @@
+name: New command to guard
+description: A destructive command in a tool the guards do not cover yet. One tool per issue.
+labels: [enhancement, needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A guard decides from the command text alone, never from knowing your infrastructure. Read [SCOPE.md](https://github.com/r0charm/agent-guardrails/blob/main/SCOPE.md) first.
+  - type: input
+    id: tool
+    attributes:
+      label: Tool
+      placeholder: psql, pulumi, gcloud
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Commands
+      description: Each command that should be denied or asked, with what it destroys. Include the reads that must stay silent.
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I read SCOPE.md and this fits it.
+          required: true
+        - label: I searched open and closed issues for a duplicate.
+          required: true
