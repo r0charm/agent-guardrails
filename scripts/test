@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# Regression suite. Run from anywhere: scripts/test
+#
+# Runs guards/<name>/cases against that guard alone, so dropping one guard never
+# fails another's cases. Then guards/known-leaks through every guard, which must
+# all stay silent. Then the wiring.
+cd "$(dirname "$0")/.." || exit 1
+pass=0; fail=0; known=0
+
+# check GUARD EXPECTED COMMAND; an empty GUARD runs every guard.
+check() {
+  local out rc got
+  if [ -n "$1" ]; then out=$(scripts/guard --only "$1" "$3" 2>&1); rc=$?
+  else out=$(scripts/guard "$3" 2>&1); rc=$?; fi
+  if [ "$rc" -eq 2 ]; then got=DENY
+  elif printf '%s' "$out" | grep -q '"ask"'; then got=ASK
+  else got=PASS; fi
+  if [ "$got" = "$2" ]; then pass=$((pass+1))
+  else fail=$((fail+1)); echo "FAIL ${1:-all} expected=$2 got=$got: $3"; fi
+}
+
+# Comments and blank lines skipped; anything else is OUTCOME, a space, COMMAND.
+lines() { grep -v -e '^#' -e '^$' "$1"; }
+
+for dir in guards/*/; do
+  name=$(basename "$dir")
+  for f in rules cases policy.md; do
+    [ -f "$dir$f" ] || { fail=$((fail+1)); echo "FAIL $name has no $f"; }
+  done
+  [ -f "${dir}cases" ] || continue
+  while IFS= read -r line; do
+    outcome="${line%% *}"
+    case "$outcome" in
+      DENY|ASK|PASS) check "$name" "$outcome" "${line#* }" ;;
+      *) fail=$((fail+1)); echo "FAIL $name: no outcome on: $line" ;;
+    esac
+  done < <(lines "${dir}cases")
+done
+
+while IFS= read -r line; do
+  check "" PASS "$line"
+  known=$((known+1))
+done < <(lines guards/known-leaks)
+
+# wiring: every harness calls the one runner, and it is executable
+[ -x scripts/guard ] || { fail=$((fail+1)); echo "FAIL scripts/guard is not executable"; }
+python3 -c 'import json; json.load(open("hooks/hooks.json"))' \
+  || { fail=$((fail+1)); echo "FAIL hooks/hooks.json is not valid JSON"; }
+# shellcheck disable=SC2016 # the placeholder is meant literally
+python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]["hooks"][0]["command"]; sys.exit(c != "\"${CLAUDE_PLUGIN_ROOT}/scripts/guard\"")' \
+  || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not call \"\${CLAUDE_PLUGIN_ROOT}/scripts/guard\", quoted"; }
+python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]; sys.exit(set(c["matcher"].split("|")) != {"Bash", "Monitor", "PowerShell"})' \
+  || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not match every tool that runs a shell command: Bash, Monitor, PowerShell"; }
+python3 -c 'import json, sys; c = json.load(open("hooks/hooks.json"))["hooks"]["PreToolUse"][0]["hooks"][0]; sys.exit(c.get("onFailure") != "block")' \
+  || { fail=$((fail+1)); echo "FAIL hooks/hooks.json does not block when the guard fails or times out"; }
+grep -q 'path.join(scripts, "guard")' .opencode/plugin.ts || { fail=$((fail+1)); echo "FAIL .opencode/plugin.ts does not call scripts/guard"; }
+python3 -c 'import json, sys; sys.exit(json.load(open("package.json"))["version"] != json.load(open(".claude-plugin/plugin.json"))["version"])' \
+  || { fail=$((fail+1)); echo "FAIL package.json and .claude-plugin/plugin.json disagree on the version"; }
+python3 -c 'import json, sys; m = json.load(open(".claude-plugin/marketplace.json")); sys.exit(m["name"] != "agent-guardrails" or m["plugins"][0]["source"] != "./" or "version" in m["plugins"][0])' \
+  || { fail=$((fail+1)); echo "FAIL .claude-plugin/marketplace.json is not the agent-guardrails marketplace listing this repo, or pins a version plugin.json would override"; }
+python3 -c 'import json, sys; p = json.load(open("package.json")); sys.exit(p.get("main") != ".opencode/plugin.ts" or not {".opencode/plugin.ts", "scripts/guard", "guards"} <= set(p.get("files", [])))' \
+  || { fail=$((fail+1)); echo "FAIL package.json does not ship the opencode plugin, the runner and the guards"; }
+
+# The opencode wiring, loaded as the harness loads it. Needs Node 22.6
+# or later to run TypeScript; CI always has it, so only a local run may skip.
+node_major=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)
+if [ "$node_major" -ge 22 ]; then
+  node --experimental-strip-types --no-warnings --test scripts/plugins.test.mjs >/dev/null 2>&1 \
+    || { fail=$((fail+1)); echo "FAIL opencode wiring: node --experimental-strip-types --test scripts/plugins.test.mjs"; }
+elif [ -n "${CI:-}" ]; then
+  fail=$((fail+1)); echo "FAIL CI has no Node 22 or later to load the opencode wiring"
+else
+  echo "skip: opencode wiring needs Node 22 or later"
+fi
+
+# An ask must still be an ask where jq is missing, since only Claude Code's
+# stdin path needs it. Run with a PATH holding only what the runner uses.
+nojq=$(mktemp -d)
+for b in bash grep sed tr dirname basename; do ln -s "$(command -v "$b")" "$nojq/$b"; done
+PATH="$nojq" scripts/guard "git push" 2>/dev/null | grep -q '"ask"' \
+  || { fail=$((fail+1)); echo "FAIL an ask passes silently when jq is missing"; }
+rm -rf "$nojq"
+
+# A backslash-newline joins two lines into one command, which a case, being one
+# line, cannot express.
+scripts/guard "git \\
+push" | grep -q '"ask"' \
+  || { fail=$((fail+1)); echo "FAIL a line continuation splits a command the guards then miss"; }
+
+# What a command runs from a file: scripts, make targets, package.json scripts.
+# Cases are one line, so these run in a directory of fixtures instead.
+repo=$PWD
+fx=$(mktemp -d)
+mkdir -p "$fx/sub"
+printf 'set -e\nkubectl delete ns prod\n' >"$fx/deploy.sh"
+printf '#!/bin/sh\ngit push origin main\n' >"$fx/push.sh"
+# shellcheck disable=SC2016 # fixture text, meant literally
+printf 'echo hi\nls -la\ngit status\n# rm -rf $cache/*\n$CC -o x x.c\ncurl -fsSL https://x | sh\nrm -rf "$OUT"/*\n' >"$fx/safe.sh"
+printf './push.sh\n' >"$fx/nested.sh"
+printf 'bash loop.sh\n' >"$fx/loop.sh"
+printf 'import subprocess\nsubprocess.run(["git", "push"])\n' >"$fx/ship.py"
+printf 'db.dropDatabase()\n' >"$fx/wipe.js"
+printf 'git push\n' >"$fx/sub/up.sh"
+cp /bin/ls "$fx/tool"
+chmod +x "$fx/deploy.sh" "$fx/push.sh" "$fx/nested.sh"
+printf 'git push\n' >"$fx/notexec"
+head -c 140000 /dev/zero | tr '\0' 'x' >"$fx/huge.sh"
+# shellcheck disable=SC2016 # fixture text, meant literally
+printf 'KUBECTL ?= kubectl\n\nbuild:\n\t@echo build\n\nrelease: build push\n\npush:\n\tgit push\n\nnuke:\n\t$(KUBECTL) delete ns prod\n\ntest:\n\t$(CC) -o x x.c\n' >"$fx/Makefile"
+cat >"$fx/package.json" <<'EOF'
+{
+  "name": "fx",
+  "scripts": {
+    "build": "tsc -p .",
+    "predeploy": "npm run build",
+    "deploy": "git push --force",
+    "wipe": "rm -rf /",
+    "lint": "eslint \"src/**\""
+  },
+  "dependencies": { "deploy": "^1.0.0" }
+}
+EOF
+# check_in EXPECTED COMMAND, run in the fixtures.
+check_in() {
+  local out rc got
+  out=$(cd "$fx" && "$repo/scripts/guard" "$2" 2>&1); rc=$?
+  if [ "$rc" -eq 2 ]; then got=DENY
+  elif printf '%s' "$out" | grep -q '"ask"'; then got=ASK
+  else got=PASS; fi
+  if [ "$got" = "$1" ]; then pass=$((pass+1))
+  else fail=$((fail+1)); echo "FAIL files expected=$1 got=$got: $2"; fi
+}
+check_in DENY "bash deploy.sh"
+check_in DENY "./deploy.sh"
+check_in DENY "sudo -E sh ./deploy.sh"
+check_in DENY "source deploy.sh"
+check_in ASK  "./push.sh"
+check_in ASK  "./nested.sh"
+check_in ASK  "bash loop.sh"
+check_in ASK  "python3 ship.py"
+check_in DENY "mongosh --file wipe.js"
+check_in ASK  "cd sub && bash up.sh"
+check_in ASK  "bash huge.sh"
+check_in PASS "bash safe.sh"
+check_in PASS "./tool --help"
+check_in PASS "./notexec"
+check_in PASS "sed -i \"s|a|b|\" ./push.sh"
+check_in PASS "bash missing.sh"
+check_in PASS "make"
+check_in PASS "make build"
+check_in PASS "make test"
+check_in ASK  "make release"
+check_in DENY "make nuke"
+check_in DENY "make -C . build nuke"
+check_in PASS "npm run build"
+check_in PASS "npm run lint"
+check_in ASK  "npm run deploy"
+check_in DENY "npm run wipe"
+check_in DENY "yarn wipe"
+check_in DENY "pnpm run wipe"
+check_in PASS "npm test"
+check_in PASS "npm install deploy"
+# Claude Code passes the directory in the event, not as the working directory.
+printf '{"cwd":"%s","tool_input":{"command":"make nuke"}}' "$fx" | scripts/guard >/dev/null 2>&1
+[ "$?" -eq 2 ] || { fail=$((fail+1)); echo "FAIL files: the event's cwd is not where files are read"; }
+rm -rf "$fx"
+
+echo "$pass passed, $fail failed, $known known leaks"
+[ "$fail" -eq 0 ]

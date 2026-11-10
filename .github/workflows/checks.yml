@@ -1,0 +1,55 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    # macOS runs the guards under its system bash 3.2, which is what
+    # `/usr/bin/env bash` finds on a Mac without Homebrew bash first on PATH.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Runs the opencode wiring, which is TypeScript.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Guard suite
+        run: scripts/test
+      - name: shellcheck
+        if: runner.os == 'Linux'
+        # rules files are sourced, so the variables they set look unused.
+        run: |
+          shellcheck scripts/guard scripts/test
+          shellcheck -s bash -e SC2034 guards/*/rules
+
+  # The package as opencode installs it from npm: packed, installed elsewhere,
+  # and run from node_modules, so a file missing from `files` fails here.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: npm pack --pack-destination "$RUNNER_TEMP"
+      - run: cd "$RUNNER_TEMP" && echo '{}' > package.json && npm i ./rocharm-agent-guardrails-*.tgz
+      - name: The installed runner denies, asks and passes
+        run: |
+          pkg="$RUNNER_TEMP/node_modules/@rocharm/agent-guardrails"
+          test -f "$pkg/.opencode/plugin.ts"
+          "$pkg/scripts/guard" "git reflog expire --all" 2>/dev/null && exit 1 || [ $? -eq 2 ]
+          "$pkg/scripts/guard" "git push" | grep -q '"ask"'
+          [ -z "$("$pkg/scripts/guard" "git status")" ]

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agent-guardrails",
+  "owner": {
+    "name": "Ricardo Rocha",
+    "url": "https://github.com/r0charm"
+  },
+  "description": "Command guards for coding agents, as an installable Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "agent-guardrails",
+      "source": "./",
+      "description": "Deny or ask before a coding agent runs a command that cannot be undone.",
+      "category": "security",
+      "keywords": ["guardrails", "hooks", "safety", "destructive-commands"]
+    }
+  ]
+}

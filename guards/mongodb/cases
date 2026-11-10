@@ -1,0 +1,51 @@
+# One case per line: OUTCOME command. OUTCOME is DENY, ASK or PASS; the
+# command is the rest of the line, verbatim. Run by scripts/test against this
+# guard alone.
+
+# denied
+DENY db.dropDatabase()
+DENY db.getSiblingDB("p").dropDatabase()
+DENY db.runCommand({dropDatabase: 1})
+DENY db.u.deleteMany({})
+DENY db.users.deleteMany( { } )
+DENY db.getCollection("users").deleteMany({}, {writeConcern: {w: 1}})
+DENY db.u.remove({})
+DENY mongorestore --drop d
+DENY mongoimport --drop -c users f.json
+# the ones that do not read as destructive
+ASK db.users.aggregate([{$out: "users"}])
+ASK db.users.aggregate([{$merge: {into: "users"}}])
+ASK db.users.renameCollection("old", true)
+# data out
+ASK mongodump --uri u
+ASK mongoexport -c users -o u.json
+# writes
+ASK db.u.drop()
+ASK db[users].drop()
+ASK mongosh prod --eval 'db.users.drop()'
+ASK db.users.updateMany({}, {$set: {x: 1}})
+ASK db.users.updateOne({a: 1}, {$set: {b: 2}})
+ASK db.users.insertOne({a: 1})
+ASK db.users.findOneAndDelete({a: 1})
+ASK db.users.findOneAndReplace({a: 1}, {})
+ASK db.users.findOneAndUpdate({a: 1}, {$set: {}})
+ASK db.users.bulkWrite([{deleteMany: {filter: {}}}])
+ASK db.users.dropIndexes()
+ASK db.users.dropIndex("a_1")
+ASK db.runCommand({drop: "users"})
+ASK node -e "db.collection('u').deleteOne({a: 1})"
+ASK mongoimport -c users f.json
+# access and the server
+ASK db.createUser({user: "x", pwd: "y", roles: ["root"]})
+ASK db.grantRolesToUser("x", ["root"])
+ASK db.dropUser("app")
+ASK db.dropAllUsers()
+ASK db.shutdownServer()
+ASK db.adminCommand({shutdown: 1})
+# reads, including fields and keys named after verbs
+PASS db.u.find({})
+PASS db.users.countDocuments({})
+PASS db.users.find({}).sort({deleteMany: 1})
+PASS db.users.aggregate([{$match: {a: 1}}])
+PASS db.users.getIndexes()
+PASS mongosh prod --eval 'db.users.findOne()'

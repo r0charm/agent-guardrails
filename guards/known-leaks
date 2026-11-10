@@ -1,0 +1,25 @@
+# Known leaks: destructive commands every guard is silent on, one per line.
+# scripts/test runs each through every guard and expects silence, so closing one
+# fails the suite and the case moves to the cases of the guard that now catches
+# it. Why each class is out of reach is in guards/shell/policy.md.
+
+# A file named through an expansion, or run by a tool whose files are not read.
+bash $DIR/deploy.sh
+just release
+task deploy
+# Another client for a guarded resource.
+oc delete project prod
+k delete ns prod
+curl -X DELETE https://k8s/api/v1/namespaces/prod
+# Tools nothing guards.
+psql -c 'DROP DATABASE prod'
+mysql -e 'DROP TABLE users'
+redis-cli FLUSHALL
+sqlite3 app.db 'DELETE FROM users'
+pulumi destroy --yes
+gcloud projects delete p
+az group delete -n rg --yes
+# Deletes git would recover only if committed, silent by design.
+rm -rf src
+find . -delete
+rsync -a --delete empty/ src/
